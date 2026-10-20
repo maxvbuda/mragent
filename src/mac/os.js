@@ -245,7 +245,7 @@ export class MacOS {
       this.state = 'desktop';
       if (wasEmpty && this.prefs.reopen) this.restoreSession();
       if (fromBoot) {
-        setTimeout(() => this.notify({ app: 'messages', title: 'Mr. Agent', body: 'Welcome to my Mac! My files are in ~/Projects. Don’t touch the coffee settings.', reply: (t) => sendMessage(this, 'agent', t), open: { to: 'agent' } }), 900);
+        setTimeout(() => this.notify({ app: 'messages', title: 'Mr. Agent', body: 'Welcome to my Mac! My files are in ~/Projects. Don’t touch the matcha settings.', reply: (t) => sendMessage(this, 'agent', t), open: { to: 'agent' } }), 900);
         setTimeout(() => this.notify({ app: 'about', title: 'About this Mac', body: '1,024-core M7 Ultra Max · 8 TB memory · 1 PB SSD. Have fun.' }), 4200);
       }
     };
@@ -333,7 +333,7 @@ export class MacOS {
       this.nowPlayingEl,
       item(glyph.robot, 'Mr. Agent', (b) => this.openMenu(b, this.robotMenu())),
       item(`<span class="mb-batt">${glyph.battery}<em>∞%</em></span>`, 'Battery', (b) => this.openMenu(b, [
-        { header: 'Battery' }, { label: 'Power Source: Coffee ☕', disabled: true }, { label: 'Charge: ∞% · Condition: Immortal', disabled: true }, { sep: true },
+        { header: 'Battery' }, { label: 'Power Source: Matcha 🍵', disabled: true }, { label: 'Charge: ∞% · Condition: Immortal', disabled: true }, { sep: true },
         { label: 'Battery Settings…', action: () => this.launch('settings', { pane: 'battery' }) }])),
       item(glyph.wifi, 'Wi-Fi', (b) => this.openMenu(b, this.wifiMenu())),
       item(glyph.search, 'Spotlight', () => this.spotlight()),
@@ -456,7 +456,7 @@ export class MacOS {
   }
 
   wifiMenu() {
-    const nets = ['BotNet 6G', 'Pretty Fly for a Wi-Fi', 'FBI Surveillance Van', 'Bill Wi the Science Fi', 'Coffee Machine (IoT)', 'Loading…'];
+    const nets = ['BotNet 6G', 'Pretty Fly for a Wi-Fi', 'FBI Surveillance Van', 'Bill Wi the Science Fi', 'Matcha Machine (IoT)', 'Loading…'];
     return [
       { header: 'Wi-Fi' },
       { label: this.prefs.wifi ? 'Turn Wi-Fi Off' : 'Turn Wi-Fi On', action: () => this.setPref('wifi', !this.prefs.wifi) },
@@ -473,7 +473,7 @@ export class MacOS {
     return [
       { header: 'Mr. Agent' },
       { label: `Status: ${b.activity}`, disabled: true },
-      { label: `Battery: ${Math.round(r.energy * 100)}% · Coffees today: ${b.stats.coffees}`, disabled: true },
+      { label: `Battery: ${Math.round(r.energy * 100)}% · Matchas today: ${b.stats.coffees}`, disabled: true },
       { label: `Steps walked: ${b.stats.steps}`, disabled: true },
       { sep: true },
       { label: 'Ask Mr. Agent…', action: () => this.assistant.toggle(true) },
@@ -573,7 +573,7 @@ export class MacOS {
   }
 
   emojiPicker(target = document.activeElement) {
-    const emojis = '😀 😂 🥹 😍 🤖 👾 💻 ⌨️ 🖱 ☕ 🍵 🚀 ✨ 🔥 💡 ✅ ❌ ⚠️ 🎉 🎶 🐛 🧠 🔧 ⚙️ 📦 📁 🗂 📝 📎 🔒 🌙 ☀️ 🌈 🌿 🌵 🍕 🍩 🧁 ❤️ 💙 💚 👍 👋 🙏 🤝 👀 🫡'.split(' ');
+    const emojis = '😀 😂 🥹 😍 🤖 👾 💻 ⌨️ 🖱 🍵 🍵 🚀 ✨ 🔥 💡 ✅ ❌ ⚠️ 🎉 🎶 🐛 🧠 🔧 ⚙️ 📦 📁 🗂 📝 📎 🔒 🌙 ☀️ 🌈 🌿 🌵 🍕 🍩 🧁 ❤️ 💙 💚 👍 👋 🙏 🤝 👀 🫡'.split(' ');
     const wrap = h('div.overlay-click');
     const grid = h('div.emoji-grid', {}, ...emojis.map((em) => h('button', { text: em, onclick: () => { target?.focus?.(); document.execCommand('insertText', false, em); wrap.remove(); } })));
     wrap.append(h('div.emoji-box', {}, h('b', { text: 'Emoji & Symbols' }), grid));
@@ -1068,7 +1068,7 @@ export class MacOS {
     const info = v.info(n);
     const isRoot = path === '/';
     const rows = isRoot
-      ? [['Kind', 'Volume'], ['Capacity', '1 PB'], ['Available', '999.98 TB'], ['Used', '19.7 GB'], ['Format', 'APFS (Encrypted, Caffeinated)']]
+      ? [['Kind', 'Volume'], ['Capacity', '1 PB'], ['Available', '999.98 TB'], ['Used', '19.7 GB'], ['Format', 'APFS (Encrypted, Matcha-powered)']]
       : [['Kind', kindOf(v.base(path), info.type)], ['Size', info.type === 'dir' ? `${info.size} items` : `${info.size.toLocaleString()} bytes`], ['Where', v.pretty(v.parent(path))], ['Created', new Date(info.created).toLocaleString()], ['Modified', new Date(info.modified).toLocaleString()], ['Permissions', info.readonly ? 'Read only (Mr. Agent is writing this)' : 'Read & Write']];
     this.createWindow({
       app: APPS.finder, title: `${isRoot ? 'Macintosh HD' : v.base(path)} Info`, width: 300, height: 360, resizable: false, restorable: false,
@@ -1132,7 +1132,7 @@ export class MacOS {
         const at = body.toLowerCase().indexOf(ql);
         items.push({ group: e.type === 'dir' ? 'Folders' : isImage(e) ? 'Images' : 'Documents', label: e.name, sub: this.vfs.pretty(this.vfs.parent(e.path)), icon: this.iconFor(e), big: isImage(e) ? `<img src="${imageURL(e, 320, 220)}" alt="">` : this.iconFor(e), detail: `${kindOf(e.name, e.type)} · ${this.vfs.pretty(e.path)}`, snippet: body ? body.slice(Math.max(0, at - 60), Math.max(0, at) + 200) : '', run: () => this.openPath(e.path) });
       });
-      const defs = { robot: 'a machine capable of carrying out a complex series of actions automatically, such as writing code and drinking coffee it cannot taste.', coffee: 'a hot drink made from roasted seeds; primary fuel of Mr. Agent.', bug: 'an undocumented feature.', agent: 'one who acts. See: Mr. Agent.', mac: 'a computer that, in this case, has 1,024 cores.', freecad: 'an open-source parametric 3D modeller. Mr. Agent was built with it.' };
+      const defs = { robot: 'a machine capable of carrying out a complex series of actions automatically, such as writing code and drinking matcha it cannot taste.', coffee: 'a hot drink made from roasted seeds; primary fuel of Mr. Agent.', bug: 'an undocumented feature.', agent: 'one who acts. See: Mr. Agent.', mac: 'a computer that, in this case, has 1,024 cores.', freecad: 'an open-source parametric 3D modeller. Mr. Agent was built with it.' };
       if (defs[ql]) items.push({ group: 'Definition', label: `${ql}: ${defs[ql]}`, icon: appIcon('notes'), detail: `${ql} (noun): ${defs[ql]}`, run: () => {} });
       items.push({ group: 'Siri Suggestions', label: `Ask Mr. Agent “${q}”`, icon: '<span class="sp-orb"></span>', run: () => this.assistant.ask(q) });
       items.push({ group: 'Search the web', label: `Search for “${q}”`, icon: appIcon('safari'), run: () => this.launch('safari', { url: `gooble://search?q=${encodeURIComponent(q)}` }) });

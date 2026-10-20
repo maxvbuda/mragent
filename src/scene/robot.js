@@ -74,7 +74,7 @@ export class Robot {
       glow: M.glow.clone(), glowSoft: M.glowSoft.clone(),
       visor: new THREE.MeshPhysicalMaterial({
         color: 0x020305, roughness: 0.06, metalness: 0.1, clearcoat: 1, clearcoatRoughness: 0.03,
-        emissive: 0xffffff, emissiveMap: this.face.texture, emissiveIntensity: 5,
+        emissive: 0xffffff, emissiveMap: this.face.texture, emissiveIntensity: 6.5,
       }),
       battery: new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }),
     };
@@ -89,11 +89,28 @@ export class Robot {
     this.torso = grp(this.pelvis, 0, 0, 0, 'torso');
     this.mesh(this.torso, 'torso', this.mat.shell);
     if (geos.torsoSeam) this.mesh(this.torso, 'torsoSeam', this.mat.joint);
-    this.mesh(this.torso, 'chestLight', this.mat.glow);
-    this.mesh(this.torso, 'chestRing', this.mat.chrome);
-    this.mesh(this.torso, 'backpack', this.mat.joint);
-    this.mesh(this.torso, 'backVent', this.mat.rubber);
-    this.setupBattery(this.mesh(this.torso, 'batteryLeds', this.mat.battery));
+    // the chest plate (with the chest light) and the backpack are separate so a punch can knock them off
+    this.chestPlate = grp(this.torso, 0, 0, 0, 'chestPlate');
+    if (geos.chestPlate) this.mesh(this.chestPlate, 'chestPlate', this.mat.shell);
+    this.mesh(this.chestPlate, 'chestLight', this.mat.glow);
+    this.mesh(this.chestPlate, 'chestRing', this.mat.chrome);
+    this.backpack = grp(this.torso, 0, 0, 0, 'backpack');
+    this.mesh(this.backpack, 'backpack', this.mat.joint);
+    this.mesh(this.backpack, 'backVent', this.mat.rubber);
+    this.setupBattery(this.mesh(this.backpack, 'batteryLeds', this.mat.battery));
+    // his insides (modelled in FreeCAD): only visible once the chest plate is gone
+    this.mat.core = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0x49e3ff, emissiveIntensity: 6 });
+    this.mat.pcb = new THREE.MeshStandardMaterial({ color: 0x1d6b3a, roughness: 0.45, metalness: 0.2 });
+    this.mat.chip = new THREE.MeshStandardMaterial({ color: 0x15171b, roughness: 0.35, metalness: 0.4 });
+    this.mat.cell = new THREE.MeshPhysicalMaterial({ color: 0x23a7b8, roughness: 0.3, clearcoat: 0.8 });
+    this.mat.wireBlack = new THREE.MeshStandardMaterial({ color: 0x1b1c20, roughness: 0.5 });
+    this.insides = grp(this.torso, 0, 0, 0, 'insides');
+    for (const [n, m] of [['spineCore', M.chrome], ['coreGlow', this.mat.core], ['coreCage', M.chrome], ['batteryCells', this.mat.cell], ['batteryCaps', M.chrome],
+      ['pcbBoards', this.mat.pcb], ['pcbChips', this.mat.chip], ['servos', M.joint], ['wireRed', M.cableRed], ['wireBlue', M.cableBlue], ['wireYellow', M.cableYellow], ['wireBlack', this.mat.wireBlack]]) {
+      if (!geos[n]) continue;
+      const im = this.mesh(this.insides, n, m);
+      im.castShadow = false;
+    }
 
     this.neck = grp(this.torso, 0, R.neck, 0, 'neck');
     this.mesh(this.neck, 'neckCollar', this.mat.joint);
@@ -122,6 +139,7 @@ export class Robot {
       gait: 0,
     };
     this.look = { yaw: 0, pitch: 0, w: 0 };
+    this.hit = { pitch: 0, roll: 0 }; // punch recoil, decays on its own
     this.gaitPhase = 0;
     this.prevPos = new THREE.Vector3();
     this.prevHeading = 0;
@@ -171,6 +189,8 @@ export class Robot {
   }
 
   updateCables() {
+    if (this.headDetached) { for (const c of this.cables) c.mesh.visible = false; return; }
+    if (!this.cables[0].mesh.visible) { for (const c of this.cables) c.mesh.visible = true; this.cableKey = null; }
     // only rebuild the tubes when the head actually moved relative to the body
     const key = [this.pelvis.quaternion, this.neck.quaternion, this.head.quaternion, this.torso.quaternion].map((q) => `${q.x.toFixed(4)}${q.y.toFixed(4)}${q.z.toFixed(4)}`).join('') + this.pelvis.position.y.toFixed(4) + this.pelvis.position.z.toFixed(4);
     if (key === this.cableKey) return;
@@ -315,7 +335,9 @@ export class Robot {
     // ---- pelvis & torso
     this.pelvis.position.set(0, st.waistY - 0.012 * w + 0.012 * w * Math.cos(ph * Math.PI * 4), st.pelvisZ);
     this.pelvis.rotation.set(0, 0.06 * w * Math.sin(ph * Math.PI * 2), 0.035 * w * Math.sin(ph * Math.PI * 2));
-    this.torso.rotation.set(-st.lean, st.twist - 0.1 * w * Math.sin(ph * Math.PI * 2), st.side);
+    this.hit.pitch = damp(this.hit.pitch, 0, 5, dt);
+    this.hit.roll = damp(this.hit.roll, 0, 5, dt);
+    this.torso.rotation.set(-st.lean + this.hit.pitch, st.twist - 0.1 * w * Math.sin(ph * Math.PI * 2), st.side + this.hit.roll);
 
     // ---- head look
     this.updateLook(dt, camera);
@@ -361,7 +383,7 @@ export class Robot {
 
     // ---- arms
     this.root.updateMatrixWorld(true);
-    for (const arm of this.arms) this.updateArm(arm, dt, w, ph);
+    for (const arm of this.arms) if (!arm.detached) this.updateArm(arm, dt, w, ph);
 
     this.updatePistons();
     this.root.updateMatrixWorld(true);
@@ -409,7 +431,7 @@ export class Robot {
     this.look.yaw = damp(this.look.yaw, yaw, 7, dt);
     this.look.pitch = damp(this.look.pitch, pitch, 7, dt);
     this.neck.rotation.set(this.look.pitch * 0.3, this.look.yaw * 0.35, 0);
-    this.head.rotation.set(this.look.pitch * 0.7, this.look.yaw * 0.65, st.headRoll);
+    if (!this.headDetached) this.head.rotation.set(this.look.pitch * 0.7, this.look.yaw * 0.65, st.headRoll);
   }
 
   updateArm(arm, dt, gaitW, ph) {
@@ -444,6 +466,7 @@ export class Robot {
 
   updatePistons() {
     for (const arm of this.arms) {
+      if (arm.detached) continue;
       const A = arm.shoulder.localToWorld(tmp.a.fromArray(this.L.arm.pistonA));
       const B = arm.elbow.localToWorld(tmp.b.fromArray(this.L.arm.pistonB));
       const toB = arm.shoulder.worldToLocal(B.clone()).sub(arm.pistonBody.position).normalize();
@@ -457,12 +480,12 @@ export class Robot {
     this.status.lerp(this.statusTarget, 1 - Math.exp(-dt * 4));
     const pulse = 0.75 + 0.25 * Math.sin(this.t * 2.4);
     this.mat.glow.emissive.copy(this.status);
-    this.mat.glow.emissiveIntensity = 4.5 + pulse * 2;
+    this.mat.glow.emissiveIntensity = 6.5 + pulse * 2;
     this.mat.glowSoft.emissive.copy(this.status);
-    this.mat.glowSoft.emissiveIntensity = 2 + (Math.sin(this.t * 5) > 0.6 ? 4 : 0.5);
+    this.mat.glowSoft.emissiveIntensity = 3 + (Math.sin(this.t * 5) > 0.6 ? 5 : 0.6);
     const lit = Math.round(this.energy * 5 + 0.49);
     const col = this.battery.g.attributes.color;
-    const on = this.energy > 0.5 ? [0.6, 3.2, 1.1] : this.energy > 0.25 ? [3.2, 2.3, 0.4] : [3.4, 0.5, 0.4];
+    const on = this.energy > 0.5 ? [0.9, 4.6, 1.6] : this.energy > 0.25 ? [4.6, 3.3, 0.6] : [4.8, 0.7, 0.6];
     for (let i = 0; i < this.battery.idx.length; i++) {
       const k = this.battery.idx[i];
       const isOn = k < lit;

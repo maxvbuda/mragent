@@ -59,7 +59,7 @@ export const minesweeper = {
 
 export const snake = {
   id: 'snake', name: 'Snake', icon: 'snake', single: true,
-  about: 'Snake — eat the coffee beans.',
+  about: 'Snake — eat the matcha leaves.',
   launch(os) {
     const N = 20, S = 18;
     const canvas = h('canvas.sn-canvas', { width: N * S, height: N * S });
@@ -93,7 +93,7 @@ export const snake = {
       x.font = `${S - 2}px serif`;
       x.textAlign = 'center';
       x.textBaseline = 'middle';
-      x.fillText('☕', food[0] * S + S / 2, food[1] * S + S / 2 + 1);
+      x.fillText('🍵', food[0] * S + S / 2, food[1] * S + S / 2 + 1);
       body.forEach(([a, b], i) => { x.fillStyle = i ? `hsl(140 70% ${50 - Math.min(25, i)}%)` : '#5dff8a'; x.beginPath(); x.roundRect(a * S + 1, b * S + 1, S - 2, S - 2, 5); x.fill(); });
       score.textContent = `Score ${pts} · Best ${best}`;
       if (!alive) { x.fillStyle = 'rgba(0,0,0,0.6)'; x.fillRect(0, 0, N * S, N * S); x.fillStyle = '#fff'; x.font = '600 22px -apple-system, sans-serif'; x.fillText('Game over — press Space', N * S / 2, N * S / 2); }

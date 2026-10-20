@@ -238,7 +238,7 @@ export const stickies = {
   id: 'stickies', name: 'Stickies', icon: 'stickies', store: true, single: true,
   about: 'Stickies — by Mr. Agent Labs.',
   launch(os) {
-    let notes = store('mragent.stickies') || [{ id: 1, text: 'Welcome to Stickies!\n\nType anything. Notes save automatically.', color: 0, x: 120, y: 60 }, { id: 2, text: 'Buy more coffee beans ☕', color: 1, x: 360, y: 120 }];
+    let notes = store('mragent.stickies') || [{ id: 1, text: 'Welcome to Stickies!\n\nType anything. Notes save automatically.', color: 0, x: 120, y: 60 }, { id: 2, text: 'Buy more matcha leaves 🍵', color: 1, x: 360, y: 120 }];
     const save = () => store('mragent.stickies', notes);
     const open = (n) => {
       const ta = h('textarea.st-note', { spellcheck: 'false', 'aria-label': 'Sticky note' });
@@ -266,12 +266,12 @@ export const stickies = {
 
 // ====================================================================== Dictionary
 const WORDS = {
-  algorithm: 'a set of steps for solving a problem, such as finding the shortest way to the coffee machine.',
+  algorithm: 'a set of steps for solving a problem, such as finding the shortest way to the matcha machine.',
   bug: 'an error in a program; also, an undocumented feature.',
-  coffee: 'a brewed drink made from roasted beans; the primary fuel of software engineers and at least one robot.',
+  coffee: 'a whisked drink made from roasted leaves; the primary fuel of software engineers and at least one robot.',
   compiler: 'a program that turns source code into something a machine can run, and complains about semicolons.',
   freecad: 'an open-source parametric 3D modeller. Mr. Agent was designed in it.',
-  latency: 'the delay before a transfer of data begins. See also: waiting for the espresso.',
+  latency: 'the delay before a transfer of data begins. See also: waiting for the matcha.',
   refactor: 'to restructure code without changing what it does, usually on a Friday (don’t).',
   robot: 'a machine capable of carrying out a complex series of actions automatically.',
   servo: 'a motor with feedback, used to move robot joints precisely.',

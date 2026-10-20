@@ -1,8 +1,10 @@
 # Mr. Agent
 
-A 3D robot who codes at his desk, wanders around his room, and lets you use his Mac.
-Every 3D part (the robot, his desk, chair, MacBook, mug, plants, bookshelf, coffee
-machine and lamp) was modelled in **FreeCAD** through its MCP server. The scene is
+A 3D robot who codes at his desk, wanders around his whole house, lets you use his Mac,
+listens to you (Qwen3-1.7B running in your browser), and breaks apart if you punch him.
+Kuma, the robot from agent-bot-3d, lives in the living room and suffers through Windows.
+Every 3D part (the robot, his office, and the kitchen, living room, bedroom, bathroom,
+workshop and garden around it) was modelled in **FreeCAD** through its MCP server. The scene is
 rendered with three.js, and the Mac is a full macOS-style simulator built in HTML.
 
 ## Starting it
@@ -10,21 +12,76 @@ rendered with three.js, and the Mac is a full macOS-style simulator built in HTM
 - Double-click **Start Mr Agent.command**, or
 - run `npm install` once, then `npm run dev` and open <http://localhost:5180>.
 
-## In the room
+## In the house
+
+The office is in the middle. Around it are a kitchen with a dining table, a living
+room, a hallway with the front door, a bedroom with a charging bed, a bathroom and a
+workshop. Walls between you and what you're looking at drop down automatically
+(Sims-style). The room buttons at the top, or **0–7**, fly the camera to each room.
 
 | Do this | What happens |
 |---|---|
 | Click the MacBook (or **M**) | The camera flies into the screen and you get his Mac. He gets up and takes a break. |
+| **/** or the 💬 button | Talk to him. Qwen decides what you mean and whether he'll do it |
+| **W A S D** (+ Shift) | Walk him around yourself, relative to the camera (Shift hurries) |
 | Click the robot (or **H**) | He waves and says hi |
-| **C** · **S** · **W** · **D** | Coffee run · stretch · look out the window · dance break |
+| **P**, then click him | Punch mode: he flinches, then his chest plate, backpack, an arm and finally his head come off |
+| **U** | Repair: the parts fly back on and he reboots |
+| Click Kuma's monitor | Use Kuma's Windows PC |
+| **C** · **Y** · **O** · **N** | Matcha run · stretch · look out the window · dance break |
+| **G** · **B** · **K** · **Z** | Watch TV on the sofa · raid the fridge · tinker in the workshop · nap |
+| **X** | Walls: cutaway, down or up |
+| **0–7** | Whole house, or jump to a room |
 | **T** | Time of day: real clock, morning, afternoon, sunset, night |
 | **F** · **R** · **V** | Follow him with the camera · reset the view · sound on/off |
 | Drag / scroll | Orbit / zoom |
 
 On his own he types (fingers press real keys, he makes typos and fixes them, runs
-tests, commits), sips coffee, and every so often gets up for a coffee run to the
-espresso machine, a stretch, the window, the bookshelf or the plant. He paths
-around furniture with A\* and his feet stay planted while he walks.
+tests, commits), sips matcha, and every so often gets up: a matcha run, a stretch,
+the window, the bookshelf, the plant, TV on the sofa, a battery can from the fridge,
+tinkering at the workbench (with sparks), checking himself in the bathroom mirror,
+watching the 3D printer, or peeking out of the front door. At night he goes to bed
+and charges until morning. He paths through the doorways with A\* and his feet stay
+planted while he walks.
+
+## Talking to him
+
+The chat panel runs **Qwen3-1.7B** (`Qwen3-1.7B-q4f16_1-MLC`) locally through
+[WebLLM](https://github.com/mlc-ai/web-llm) on WebGPU, in a Web Worker. The weights (about 1 GB)
+start downloading a few seconds after the page opens. The browser caches them, so later
+visits load in seconds. Each message goes to the model with what he's doing right now, how
+damaged he is and how often he's been punched. The model answers in schema-constrained JSON:
+a reply, an action (walk to any room or spot, make matcha, watch TV, nap, dance, come
+over, visit Kuma, let you drive…) and a mood. He refuses rude, harmful or impossible
+requests. Without WebGPU, or while the weights are still downloading, a rule-based parser
+stands in. Set `localStorage['mragent.qwen'] = 'off'` to stop the automatic download.
+
+## Breaking him
+
+The torso is a hollow FreeCAD shell with a separate chest plate. Behind the plate are the
+parts you see once it's knocked off: a spine, a glowing reactor core in a gimbal cage,
+battery cells, circuit boards with chips, shoulder servos and a loom of red, blue,
+yellow and black wires. Loose parts tumble with simple rigid-body physics: gravity,
+contact at the corners of each part's box, bounce and friction. Exposed wires spark and
+smoke, and his visor cracks and glitches. After the last hit he collapses. Repair puts
+everything back.
+
+## Kuma and the Windows PC
+
+Kuma's robot code is copied unchanged from agent-bot-3d into `src/kuma/`. He sits at an RGB gaming
+desk, with a tower PC and a gaming chair modelled in FreeCAD, and types on his keyboard.
+The PC forces updates, blue-screens, and nags him about Edge, OneDrive and Copilot, and he
+reacts to each one: waiting with his hands behind his head, or slamming the desk.
+Click the monitor for the full Windows 11 parody:
+- a "Let's finish setting up your device" screen with no way to say no
+- a Start menu full of ads, and Widgets full of clickbait
+- a File Explorer that is slow on purpose
+- Edge begging you not to download Chrome
+- Settings that won't let you personalise without activation, and default apps set one file type at a time
+- Control Panel sending you back to Settings
+- a Store that throws error 0x80070005
+- Teams that never loads, plus Copilot, Command Prompt, Task Manager, Notepad with "✨ Rewrite", and Candy Crush
+- Updates and blue screens that close your windows
 
 ## On his Mac
 
@@ -61,12 +118,20 @@ It also saves `cad/mr_agent.FCStd` with everything posed at the desk.
 
 ## Files
 
-- `cad/build_models.py`: the FreeCAD model of the robot and room
+- `cad/build_models.py`: the FreeCAD model of the robot and office
+- `cad/house.py`: the floor plan and every piece of furniture in the rest of the house
+- `cad/extras.py`: the robot's insides and chest plate, and Kuma's desk, PC and chair
+- `src/ai/`: Qwen via WebLLM (`agent.js`, `worker.js`) and the rule-based fallback
+- `src/scene/damage.js`: punches, flying parts, sparks, smoke, repair
+- `src/kuma/`: Kuma's robot (from agent-bot-3d) and `kuma.js`, which poses him at his desk
+- `src/win/`: Kuma's Windows PC: `pc.js` (state machine + monitor image), `os.js` + `win.css` (the simulator)
 - `src/scene/robot.js`: rig, two-bone IK for arms and legs, gait, fingers, pistons, neck cables
 - `src/scene/brain.js`: what he does and when
 - `src/scene/face.js`: the eyes on his visor
 - `src/scene/screen.js`, `code.js`: the laptop display and the code he writes
-- `src/scene/props.js`, `world.js`: room, props, lighting, day/night, post-processing
+- `src/scene/props.js`: the office props
+- `src/scene/house.js`: floors, walls with cutaway, furniture, TV, fridge, garden and sky
+- `src/scene/world.js`: lighting, day/night, post-processing
 - `src/scene/nav.js`: A\* pathfinding
 - `src/audio.js`: all sounds and the lo-fi music, synthesised with WebAudio
 - `src/mac/`: the Mac: `os.js` (window manager, Dock, menus, overlays), `vfs.js`, `apps/`

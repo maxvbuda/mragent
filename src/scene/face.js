@@ -18,6 +18,11 @@ const SHAPES = {
   annoyed:  { open: 0.5, w: 1.1, tilt: -0.3, color: [255, 120, 90] },
   wink:     { open: 1, w: 1, tilt: 0, wink: 1, color: [110, 240, 255] },
   loading:  { open: 0.9, w: 1, tilt: 0, spinner: 1, color: [120, 220, 255] },
+  angry:    { open: 0.55, w: 1.15, tilt: -0.45, color: [255, 70, 60] },
+  hurt:     { open: 1, w: 1, tilt: 0, cross: 1, color: [255, 150, 90] },
+  dizzy:    { open: 1, w: 1, tilt: 0, spiral: 1, color: [255, 205, 90] },
+  dead:     { open: 1, w: 1, tilt: 0, cross: 1, color: [255, 50, 40] },
+  off:      { open: 0.05, w: 1, tilt: 0, color: [0, 0, 0] },
 };
 
 export class Face {
@@ -31,7 +36,7 @@ export class Face {
     this.texture.generateMipmaps = false;
     this.texture.minFilter = THREE.LinearFilter;
     this.expr = 'normal';
-    this.cur = { ...SHAPES.normal, arc: 0, heart: 0, ring: 0, wink: 0, spinner: 0 };
+    this.cur = { ...SHAPES.normal, arc: 0, heart: 0, ring: 0, wink: 0, spinner: 0, cross: 0, spiral: 0 };
     this.gaze = new THREE.Vector2();
     this.gazeTarget = new THREE.Vector2();
     this.blink = 0;
@@ -40,6 +45,17 @@ export class Face {
     this.hold = 0;
     this.brightness = 1;
     this.talk = 0;
+    this.glitch = 0;   // 0..1 picture tearing (damage)
+    this.cracks = [];  // polylines across the glass once he's been hit hard
+  }
+
+  crack() {
+    const pts = [[W * (0.25 + Math.random() * 0.5), H * (0.2 + Math.random() * 0.6)]];
+    for (let i = 0; i < 3 + Math.floor(Math.random() * 3); i++) {
+      const [px, py] = pts[pts.length - 1];
+      pts.push([px + (Math.random() - 0.5) * 140, py + (Math.random() - 0.5) * 110]);
+    }
+    this.cracks.push(pts);
   }
 
   set(expr, holdSeconds = 0) {
@@ -58,7 +74,7 @@ export class Face {
     }
     const target = SHAPES[this.expr];
     const k = 1 - Math.exp(-dt * 10);
-    for (const key of ['open', 'w', 'tilt', 'arc', 'heart', 'ring', 'wink', 'spinner']) {
+    for (const key of ['open', 'w', 'tilt', 'arc', 'heart', 'ring', 'wink', 'spinner', 'cross', 'spiral']) {
       this.cur[key] += ((target[key] || 0) - this.cur[key]) * k;
     }
     this.cur.color = this.cur.color.map((c, i) => c + (target.color[i] - c) * k);
@@ -104,7 +120,21 @@ export class Face {
       x.save();
       x.translate(cx, cy);
       x.rotate(c.tilt * side);
-      if (c.heart > 0.5) {
+      if (c.cross > 0.5) {
+        x.lineWidth = 14;
+        x.lineCap = 'round';
+        x.beginPath();
+        x.moveTo(-28, -28); x.lineTo(28, 28); x.moveTo(28, -28); x.lineTo(-28, 28);
+        x.stroke();
+      } else if (c.spiral > 0.5) {
+        x.lineWidth = 8;
+        x.beginPath();
+        for (let a = 0; a < Math.PI * 6; a += 0.2) {
+          const rr = a * 2.4, aa = a + this.t * 6 * side;
+          if (a === 0) x.moveTo(Math.cos(aa) * rr, Math.sin(aa) * rr); else x.lineTo(Math.cos(aa) * rr, Math.sin(aa) * rr);
+        }
+        x.stroke();
+      } else if (c.heart > 0.5) {
         this.heart(x, 0, 0, 46 * (0.92 + Math.sin(this.t * 7) * 0.08));
       } else if (c.arc > 0.5) {
         x.lineWidth = 15;
@@ -156,6 +186,23 @@ export class Face {
       x.stroke();
     }
     x.shadowBlur = 0;
+    if (this.glitch > 0.01) { // tear the picture into shifted strips
+      for (let i = 0; i < 6; i++) {
+        if (Math.random() > this.glitch) continue;
+        const y = Math.random() * H, hh = 6 + Math.random() * 30;
+        x.drawImage(this.canvas, 0, y, W, hh, (Math.random() - 0.5) * 80 * this.glitch, y, W, hh);
+      }
+      if (Math.random() < this.glitch * 0.3) { x.fillStyle = `rgba(255,255,255,${0.1 + Math.random() * 0.2})`; x.fillRect(0, Math.random() * H, W, 3); }
+    }
+    if (this.cracks.length) {
+      x.strokeStyle = 'rgba(220,240,255,0.55)';
+      x.lineWidth = 2;
+      for (const pts of this.cracks) {
+        x.beginPath();
+        pts.forEach(([px, py], i) => (i ? x.lineTo(px, py) : x.moveTo(px, py)));
+        x.stroke();
+      }
+    }
   }
 
   roundRect(x, px, py, w, h, r) {

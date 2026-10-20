@@ -14,9 +14,9 @@ export const SPECS = {
     'Total Number of Cores': '1,024 (768 performance and 256 efficiency)', 'GPU': '4,096-core GPU with hardware ray tracing 2.0',
     'Neural Engine': '2,048-core, 9,000 TOPS', 'Memory': '8 TB unified LPDDR9 · 1.2 PB/s bandwidth',
     'Storage': '1 PB SSD · 140 GB/s read', 'Display': '16.2″ Liquid Retina Ultra XDR · 32K (30720 × 19200) · 1000 Hz ProMotion · 100,000 nits peak',
-    'Battery': '∞ Wh · Cycle count 0 · Condition: Immortal', 'Ports': '6 × Thunderbolt 9 (480 Gb/s), MagSafe 5, HDMI 3.0, SDUC, 1 × Espresso port',
+    'Battery': '∞ Wh · Cycle count 0 · Condition: Immortal', 'Ports': '6 × Thunderbolt 9 (480 Gb/s), MagSafe 5, HDMI 3.0, SDUC, 1 × Matcha port',
     'Wireless': 'Wi-Fi 9 (BE-2), Bluetooth 7.0, Starlink Direct, AirDrop to Mars', 'Camera': '48 MP Center Stage, sees through walls (opt-in)',
-    'Speakers': '12-speaker array, spatial audio, can play notes only dogs hear', 'Weight': '1.2 kg (2.6 lb) including the coffee',
+    'Speakers': '12-speaker array, spatial audio, can play notes only dogs hear', 'Weight': '1.2 kg (2.6 lb) including the matcha',
     'System Firmware Version': '11881.1.1 (robot)', 'Serial Number': 'B33PB00P1024', 'Hardware UUID': 'DEADBEEF-CAFE-F00D-1024-C0FFEE000001',
   },
 };
@@ -43,7 +43,7 @@ export const about = {
         h('dl.about-specs', {},
           ...[['Chip', SPECS.chip], ['Memory', SPECS.memory], ['Startup disk', SPECS.disk], ['Serial number', SPECS.serial], ['macOS', SPECS.os]].flatMap(([k, v]) => [h('dt', { text: k }), h('dd', { text: v })])),
         h('div.about-btns', {}, h('button.btn', { text: 'More Info…', onclick: () => os.launch('sysinfo') }), h('button.btn', { text: 'Benchmark', onclick: () => os.launch('benchmark') })),
-        h('p.about-legal', { text: '™ and © 2031 Mr. Agent. All rights reserved. No coffee was harmed.' }))),
+        h('p.about-legal', { text: '™ and © 2031 Mr. Agent. All rights reserved. No matcha was harmed.' }))),
     });
   },
 };
@@ -57,7 +57,7 @@ export const sysinfo = {
       Graphics: { 'Chipset Model': 'Apple M7 Ultra Max GPU', 'Cores': '4,096', 'Ray tracing': '1.2 trillion rays/s', 'Metal Support': 'Metal 7', 'Displays': '16.2″ 32K built-in + up to 12 external 16K displays' },
       Memory: { 'Size': '8 TB', 'Type': 'LPDDR9 unified', 'Bandwidth': '1.2 PB/s', 'Used': '12.4 GB (0.15%)', 'Compressed': '0 bytes (no need)' },
       Storage: { 'Macintosh HD': '1 PB APFS (encrypted)', 'Available': '999.98 TB', 'Read speed': '140 GB/s', 'Write speed': '120 GB/s', 'TRIM': 'Yes' },
-      Power: { 'Battery capacity': '∞ Wh', 'Cycle count': '0', 'Condition': 'Immortal', 'Charging': 'Not needed', 'Power source': 'Coffee (via Espresso port)' },
+      Power: { 'Battery capacity': '∞ Wh', 'Cycle count': '0', 'Condition': 'Immortal', 'Charging': 'Not needed', 'Power source': 'Matcha (via Matcha port)' },
       Network: { 'Wi-Fi': `Wi-Fi 9 · ${os.prefs.network}`, 'Throughput': '40 Gb/s', 'Bluetooth': '7.0, range 1 km', 'Satellite': 'Starlink Direct', 'Ethernet': 'Thunderbolt 9 dongle (sold separately, obviously)' },
       'Neural Engine': { 'Cores': '2,048', 'Throughput': '9,000 TOPS', 'Current model': 'mr-agent-v7 (local)', 'Context window': 'everything, forever' },
     };
@@ -82,8 +82,8 @@ export const benchmark = {
     const results = h('div.bm-results');
     const btn = h('button.btn.primary', { text: 'Run Benchmarks' });
     const bar = h('div.bm-bar', {}, h('i'));
-    const status = h('p.bm-status', { text: 'Tests CPU, GPU, Neural Engine and coffee throughput.' });
-    const tests = [['Single-Core', 98_431], ['Multi-Core', 31_890_224], ['GPU (Metal)', 9_120_553], ['Neural Engine', 4_200_000], ['Espresso / s', 3]];
+    const status = h('p.bm-status', { text: 'Tests CPU, GPU, Neural Engine and matcha throughput.' });
+    const tests = [['Single-Core', 98_431], ['Multi-Core', 31_890_224], ['GPU (Metal)', 9_120_553], ['Neural Engine', 4_200_000], ['Matcha / s', 3]];
     const compare = [['This Mac', 1], ['M4 Max (2024)', 0.0007], ['Kuma’s laptop', 0.0003], ['Apollo Guidance Computer', 1e-9]];
     btn.addEventListener('click', async () => {
       btn.disabled = true;

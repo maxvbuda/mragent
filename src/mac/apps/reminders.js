@@ -5,9 +5,9 @@ const SEED = {
   lists: [{ id: 'chores', name: 'Robot Chores', color: '#0a84ff' }, { id: 'groceries', name: 'Groceries', color: '#30d158' }, { id: 'work', name: 'Work', color: '#ff9f0a' }],
   items: [
     { id: 1, list: 'chores', text: 'Oil the knee servos', done: false, flag: true, today: true },
-    { id: 2, list: 'chores', text: 'Descale the coffee machine', done: false, flag: false, today: true },
+    { id: 2, list: 'chores', text: 'Descale the matcha machine', done: false, flag: false, today: true },
     { id: 3, list: 'chores', text: 'Water the fern', done: true, flag: false },
-    { id: 4, list: 'groceries', text: 'Espresso beans (lots)', done: false, flag: false },
+    { id: 4, list: 'groceries', text: 'Matcha leaves (lots)', done: false, flag: false },
     { id: 5, list: 'groceries', text: 'WD-40', done: false, flag: false },
     { id: 6, list: 'work', text: 'Ship gait.py', done: false, flag: true, today: true },
     { id: 7, list: 'work', text: 'Never deploy on Friday', done: false, flag: false },

@@ -140,6 +140,14 @@ class AudioEngine {
   trash() { this.noise({ dur: 0.4, freq: 1500, sweepTo: 300, q: 1, gain: 0.12 }); }
   error() { this.tone({ freq: 220, dur: 0.18, type: 'square', gain: 0.04 }); this.tone({ freq: 196, dur: 0.18, type: 'square', gain: 0.04, at: 0.16 }); }
   message() { this.tone({ freq: 1046, dur: 0.15, type: 'sine', gain: 0.08 }); this.tone({ freq: 1568, dur: 0.25, type: 'sine', gain: 0.07, at: 0.09 }); }
+  thud() { this.tone({ freq: 90, slideTo: 45, dur: 0.25, type: 'sine', gain: 0.5 }); this.noise({ dur: 0.12, freq: 700, q: 0.7, gain: 0.25 }); }
+  punch() { this.tone({ freq: 140, slideTo: 60, dur: 0.18, type: 'sine', gain: 0.55 }); this.noise({ dur: 0.09, freq: 2600, q: 0.6, gain: 0.35 }); this.tone({ freq: 2200, slideTo: 1500, dur: 0.25, type: 'triangle', gain: 0.05, at: 0.02 }); }
+  zap(g = 1) { this.noise({ dur: 0.07 + Math.random() * 0.1, freq: 5000 + Math.random() * 3000, q: 4, gain: 0.12 * g }); this.tone({ freq: 3000 + Math.random() * 2000, dur: 0.05, type: 'square', gain: 0.02 * g }); }
+  clank(g = 1) { for (let i = 0; i < 3; i++) this.tone({ freq: 700 + Math.random() * 900, dur: 0.3, type: 'triangle', gain: 0.06 * g, at: i * 0.04 }); this.noise({ dur: 0.06, freq: 3500, q: 1.5, gain: 0.1 * g }); }
+  powerDown() { this.tone({ freq: 880, slideTo: 60, dur: 1.4, type: 'sawtooth', gain: 0.05 }); }
+  powerUp() { this.tone({ freq: 120, slideTo: 1200, dur: 1.0, type: 'sawtooth', gain: 0.04 }); this.chime(); }
+  winError() { this.tone({ freq: 523, dur: 0.12, type: 'triangle', gain: 0.08 }); this.tone({ freq: 392, dur: 0.25, type: 'triangle', gain: 0.08, at: 0.1 }); }
+  winDing() { this.tone({ freq: 784, dur: 0.15, type: 'sine', gain: 0.08 }); this.tone({ freq: 1175, dur: 0.3, type: 'sine', gain: 0.07, at: 0.08 }); }
   screenshot() { this.noise({ dur: 0.08, freq: 3000, q: 2, gain: 0.15 }); this.noise({ dur: 0.1, freq: 2000, q: 2, gain: 0.12, at: 0.12 }); }
 }
 
@@ -162,7 +170,7 @@ export class LofiPlayer {
     { title: 'Compile & Chill', artist: 'Mr. Agent', bpm: 76, root: 57, prog: [[0, 4, 7, 11], [5, 9, 12, 16], [2, 5, 9, 12], [7, 11, 14, 17]] },
     { title: 'Late Night Linting', artist: 'Mr. Agent', bpm: 70, root: 53, prog: [[0, 3, 7, 10], [5, 8, 12, 15], [-2, 2, 5, 9], [3, 7, 10, 14]] },
     { title: 'Merge Conflict Blues', artist: 'The Rebasers', bpm: 84, root: 55, prog: [[0, 4, 7, 10], [5, 9, 12, 15], [0, 4, 7, 10], [7, 10, 14, 17]] },
-    { title: 'Espresso Shot (9 bar mix)', artist: 'Coffee.rs', bpm: 90, root: 60, prog: [[0, 4, 7, 11], [9, 12, 16, 19], [5, 9, 12, 16], [7, 11, 14, 17]] },
+    { title: 'Matcha Shot (9 bar mix)', artist: 'Matcha.rs', bpm: 90, root: 60, prog: [[0, 4, 7, 11], [9, 12, 16, 19], [5, 9, 12, 16], [7, 11, 14, 17]] },
   ];
 
   onChange(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }

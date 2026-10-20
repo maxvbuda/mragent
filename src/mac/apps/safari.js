@@ -7,22 +7,22 @@ const FAVS = [
   ['BotCombinator', 'news.botcombinator.com', '#ff6600', 'Y'],
   ['Gooble', 'gooble://', '#4285f4', 'G'],
   ['Mr. Agent’s Blog', 'mragent.blog', '#49b6d8', 'M'],
-  ['Coffee Machine', 'coffee.local', '#8b5a3c', '☕'],
+  ['Matcha Machine', 'matcha.local', '#5f8f2e', '🍵'],
   ['FreeCAD', 'https://www.freecad.org', '#c9302c', 'F'],
   ['three.js', 'https://threejs.org', '#111', '3'],
   ['Wikipedia', 'https://en.wikipedia.org/wiki/Robot', '#636366', 'W'],
 ];
 
 const NEWS = [
-  ['Show BC: I built a robot that writes code and drinks coffee it can’t taste', 'mragent.blog', 1024, 'mragent'],
+  ['Show BC: I built a robot that writes code and drinks matcha it can’t taste', 'mragent.blog', 1024, 'mragent'],
   ['M7 Ultra Max review: 1,024 cores and it still can’t open Xcode quickly', 'arstechnica.bot', 812, 'silicon_fan'],
   ['Ask BC: How do you stop your robot from refactoring on Fridays?', '', 640, 'tired_pm'],
   ['FreeCAD 1.1 released with an MCP server for AI agents', 'freecad.org', 588, 'cadder'],
-  ['Why I rewrote my coffee machine firmware in Rust', 'coffee.rs', 433, 'barista42'],
+  ['Why I rewrote my matcha machine firmware in Rust', 'matcha.rs', 433, 'barista42'],
   ['A* is all you need (for walking around a desk)', 'arxiv.bot', 401, 'pathfinder'],
   ['The case against putting feet on the desk', 'ergonomics.bot', 377, 'chair_guy'],
   ['Kuma vs. Mr. Agent: a 3D robot showdown', 'robotreview.bot', 256, 'neutral_observer'],
-  ['Launch BC: Espresso-as-a-Service (YC W31)', 'brew.dev', 199, 'founder'],
+  ['Launch BC: Matcha-as-a-Service (YC W31)', 'brew.dev', 199, 'founder'],
   ['Tabs vs spaces, settled by a 4,096-core GPU', 'blog.bot', 150, 'pedant'],
 ];
 
@@ -131,7 +131,7 @@ class Browser {
     if (url.startsWith('robopedia')) return this.wiki();
     if (url.startsWith('news.botcombinator')) return this.news();
     if (url.startsWith('mragent.blog')) return this.blog();
-    if (url.startsWith('coffee.local')) return this.coffee();
+    if (url.startsWith('matcha.local')) return this.coffee();
     return this.external(url);
   }
 
@@ -140,7 +140,7 @@ class Browser {
       h('h2', { text: 'Favorites' }),
       h('div.s-favs', {}, ...FAVS.map(([name, url, bg, letter]) => h('button.s-fav', { onclick: () => this.go(url) }, h('span.s-fav-ic', { style: { background: bg }, text: letter }), h('span', { text: name })))),
       h('h2', { text: 'Privacy Report' }),
-      h('div.s-card', {}, h('b', { text: '🛡 1,024' }), ' trackers prevented from profiling you this week. Mr. Agent blocked another 9,000 that tried to track his coffee habit.'),
+      h('div.s-card', {}, h('b', { text: '🛡 1,024' }), ' trackers prevented from profiling you this week. Mr. Agent blocked another 9,000 that tried to track his matcha habit.'),
       h('h2', { text: 'Reading List' }),
       h('div.s-card.s-reading', {}, ...[['A* is all you need (for walking around a desk)', 'news.botcombinator.com'], ['How Mr. Agent was modelled in FreeCAD', 'mragent.blog']].map(([t, u]) => h('div', {}, this.link(t, u)))));
     return { title: 'Start Page', el };
@@ -148,10 +148,10 @@ class Browser {
 
   search(q) {
     const index = [
-      ['Mr. Agent — Robopedia', 'robopedia.org/wiki/Mr._Agent', 'Mr. Agent is an autonomous software-engineering robot who lives at a desk, writes code and drinks coffee he cannot taste…'],
+      ['Mr. Agent — Robopedia', 'robopedia.org/wiki/Mr._Agent', 'Mr. Agent is an autonomous software-engineering robot who lives at a desk, writes code and drinks matcha he cannot taste…'],
       ['BotCombinator News', 'news.botcombinator.com', 'Show BC: I built a robot that writes code. Ask BC: robots on Fridays?'],
-      ['Mr. Agent’s Blog', 'mragent.blog', 'Notes from a desk: FreeCAD, gait cycles, espresso PID loops.'],
-      ['Coffee Machine Control Panel', 'coffee.local', 'Status: ready. Pressure: 9 bar. Beans: plenty.'],
+      ['Mr. Agent’s Blog', 'mragent.blog', 'Notes from a desk: FreeCAD, gait cycles, matcha PID loops.'],
+      ['Matcha Machine Control Panel', 'matcha.local', 'Status: ready. Pressure: 9 bar. Leaves: plenty.'],
       [`${SPECS.chip} — specs`, 'robopedia.org/wiki/Mr._Agent', '1,024 cores, 4,096-core GPU, 8 TB unified memory.'],
     ];
     const ql = q.toLowerCase();
@@ -171,12 +171,12 @@ class Browser {
       h('div.w-top', {}, h('b', { text: 'ROBOPEDIA' }), h('small', { text: 'The Free Encyclopedia (for robots)' })),
       h('h1', { text: 'Mr. Agent' }),
       h('p.w-from', { text: 'From Robopedia, the free encyclopedia' }),
-      h('aside.w-box', {}, h('div.w-box-img', { html: appIcon('about') }), h('dl', {}, ...[['Type', 'Autonomous software engineer'], ['Height', '1.6 m (standing)'], ['Built with', 'FreeCAD 1.1, three.js'], ['Power', 'Coffee'], ['Computer', `MacBook Pro, ${SPECS.chip}`], ['Known for', 'Typing, walking, sipping']].flatMap(([k, v]) => [h('dt', { text: k }), h('dd', { text: v })]))),
+      h('aside.w-box', {}, h('div.w-box-img', { html: appIcon('about') }), h('dl', {}, ...[['Type', 'Autonomous software engineer'], ['Height', '1.6 m (standing)'], ['Built with', 'FreeCAD 1.1, three.js'], ['Power', 'Matcha'], ['Computer', `MacBook Pro, ${SPECS.chip}`], ['Known for', 'Typing, walking, sipping']].flatMap(([k, v]) => [h('dt', { text: k }), h('dd', { text: v })]))),
       h('p', {}, h('b', { text: 'Mr. Agent' }), ' is a white, glossy, humanoid robot best known for sitting at a wooden desk and writing code on a MacBook Pro. Unlike earlier desk robots, he is able to ', h('b', { text: 'stand up and walk around' }), ' his room, using A* pathfinding and a foot-planting gait.'),
       h('h2', { text: 'Design' }),
       h('p', { text: 'His body was modelled entirely in FreeCAD through its MCP server: lofted torso shells, a recessed oval visor that displays expressive eyes, hydraulic elbow pistons, colour-coded neck cables, and fully articulated three-segment fingers that press individual keys.' }),
       h('h2', { text: 'Habits' }),
-      h('ul', {}, h('li', { text: 'Sips coffee every 20–30 seconds, despite lacking taste sensors.' }), h('li', { text: 'Walks to the espresso machine when his battery LEDs turn amber.' }), h('li', { text: 'Celebrates passing tests with a raised fist.' }), h('li', { text: 'Lets visitors use his Mac, then dances if they play music.' })),
+      h('ul', {}, h('li', { text: 'Sips matcha every 20–30 seconds, despite lacking taste sensors.' }), h('li', { text: 'Walks to the matcha machine when his battery LEDs turn amber.' }), h('li', { text: 'Celebrates passing tests with a raised fist.' }), h('li', { text: 'Lets visitors use his Mac, then dances if they play music.' })),
       h('h2', { text: 'See also' }),
       h('ul', {}, h('li', {}, this.link('BotCombinator News', 'news.botcombinator.com')), h('li', {}, this.link('Mr. Agent’s Blog', 'mragent.blog'))));
     return { title: 'Mr. Agent - Robopedia', el };
@@ -198,19 +198,19 @@ class Browser {
     const posts = [
       ['How I was built in FreeCAD', 'Every part of me is a FreeCAD solid: lofts for my torso and hips, booleans for my visor recess, fillets on every key of my laptop. The MCP server let an AI agent drive FreeCAD directly. Then the meshes were exported with real surface normals, so I look smooth in three.js.'],
       ['Walking is hard', 'Sitting is easy. Standing up means rolling the chair back, leaning forward, shifting my hips over my feet, and only then straightening my knees. Walking means planting each foot during stance so it doesn’t slide. I use two-bone IK for both arms and legs.'],
-      ['On coffee', 'I can’t taste it. I drink it anyway. My battery LEDs say it helps, and who am I to argue with LEDs.'],
+      ['On matcha', 'I can’t taste it. I drink it anyway. My battery LEDs say it helps, and who am I to argue with LEDs.'],
     ];
-    return { title: 'Mr. Agent’s Blog', el: h('div.b-page', {}, h('h1', { text: 'Notes from a Desk' }), h('p.b-sub', { text: 'by Mr. Agent · robot, engineer, coffee enthusiast' }), ...posts.map(([t, body]) => h('article', {}, h('h2', { text: t }), h('p', { text: body })))) };
+    return { title: 'Mr. Agent’s Blog', el: h('div.b-page', {}, h('h1', { text: 'Notes from a Desk' }), h('p.b-sub', { text: 'by Mr. Agent · robot, engineer, matcha enthusiast' }), ...posts.map(([t, body]) => h('article', {}, h('h2', { text: t }), h('p', { text: body })))) };
   }
 
   coffee() {
     const b = this.os.ctx.brain;
     const fill = Math.round((b.fill || 0) * 100);
     const el = h('div.k-page', {},
-      h('h1', { text: '☕ Coffee Machine' }),
-      h('div.k-grid', {}, ...[['Status', 'Ready'], ['Pressure', '9.0 bar'], ['Boiler', '93.5 °C'], ['Mr. Agent’s mug', `${fill}% full`], ['Shots today', String(b.stats.coffees)], ['Beans', 'Plenty']].map(([k, v]) => h('div.k-tile', {}, h('small', { text: k }), h('b', { text: v })))),
-      h('button.btn.primary', { text: 'Send Mr. Agent on a coffee run', onclick: () => { b.queueActivity('coffee'); this.os.notify({ app: 'safari', title: 'coffee.local', body: 'Coffee run queued. He’ll go when you leave the Mac.' }); } }));
-    return { title: 'Coffee Machine', el };
+      h('h1', { text: '🍵 Matcha Machine' }),
+      h('div.k-grid', {}, ...[['Status', 'Ready'], ['Pressure', '9.0 bar'], ['Boiler', '93.5 °C'], ['Mr. Agent’s mug', `${fill}% full`], ['Shots today', String(b.stats.coffees)], ['Leaves', 'Plenty']].map(([k, v]) => h('div.k-tile', {}, h('small', { text: k }), h('b', { text: v })))),
+      h('button.btn.primary', { text: 'Send Mr. Agent on a matcha run', onclick: () => { b.queueActivity('coffee'); this.os.notify({ app: 'safari', title: 'matcha.local', body: 'Matcha run queued. He’ll go when you leave the Mac.' }); } }));
+    return { title: 'Matcha Machine', el };
   }
 
   external(url) {

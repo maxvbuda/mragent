@@ -24,21 +24,21 @@ export class World {
     this.scene = new THREE.Scene();
     this.bg = new THREE.Color(0xe4e9f0);
     this.scene.background = this.bg;
-    this.scene.fog = new THREE.Fog(this.bg, 12, 26);
     const pmrem = new THREE.PMREMGenerator(r);
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     this.scene.environmentIntensity = 0.5;
 
-    this.camera = new THREE.PerspectiveCamera(36, container.clientWidth / container.clientHeight, 0.02, 60);
-    // wide enough to see the whole room, desk in the foreground
+    this.camera = new THREE.PerspectiveCamera(36, container.clientWidth / container.clientHeight, 0.02, 300);
+    // the office, desk in the foreground; `house` is the whole-house overview
     this.home = { pos: new THREE.Vector3(2.1, 2.6, -4.6), target: new THREE.Vector3(0.05, 0.8, 0.5) };
+    this.overview = { pos: new THREE.Vector3(5.5, 15.5, -17.5), target: new THREE.Vector3(-0.2, 0, -2.6) };
     this.camera.position.copy(this.home.pos);
     const c = (this.controls = new OrbitControls(this.camera, r.domElement));
     c.target.copy(this.home.target);
     c.enableDamping = true;
     c.dampingFactor = 0.07;
     c.minDistance = 0.6;
-    c.maxDistance = 9;
+    c.maxDistance = 34;
     c.maxPolarAngle = Math.PI * 0.495;
     c.update();
 
@@ -46,26 +46,21 @@ export class World {
     this.hemi = new THREE.HemisphereLight(0xf3f6ff, 0xc9b79a, 0.55);
     this.scene.add(this.hemi);
     this.sun = new THREE.DirectionalLight(0xfff1dc, 3.2);
-    this.sun.position.set(-3.6, 5.5, 9);
-    this.sun.target.position.set(-0.6, 0, 0.4);
+    this.sunCenter = new THREE.Vector3(-0.25, 0, -2.8); // middle of the house
+    this.sun.position.set(-3.6, 9, 12);
+    this.sun.target.position.copy(this.sunCenter);
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(1024, 1024);
+    this.sun.shadow.mapSize.set(2048, 2048);
     const sc = this.sun.shadow.camera;
-    sc.left = -5; sc.right = 5; sc.top = 5; sc.bottom = -5; sc.near = 2; sc.far = 22;
-    this.sun.shadow.bias = -0.0004;
-    this.sun.shadow.normalBias = 0.02;
+    sc.left = -12; sc.right = 12; sc.top = 12; sc.bottom = -12; sc.near = 1; sc.far = 60;
+    this.sun.shadow.bias = -0.0009;
+    this.sun.shadow.normalBias = 0.06;
     this.sun.shadow.radius = 4;
     this.scene.add(this.sun, this.sun.target);
     this.key = new THREE.DirectionalLight(0xffffff, 1.1); // soft studio key from the open (camera) side
     this.key.position.set(2.5, 4.2, -4.5);
     this.key.target.position.set(0, 0.6, 0.4);
-    this.key.castShadow = true;
-    this.key.shadow.mapSize.set(1024, 1024);
-    const kc = this.key.shadow.camera;
-    kc.left = -4; kc.right = 4; kc.top = 4; kc.bottom = -4; kc.near = 1; kc.far = 16;
-    this.key.shadow.bias = -0.0003;
-    this.key.shadow.normalBias = 0.02;
-    this.key.shadow.radius = 6;
+    this.key.castShadow = false; // the sun casts the shadows for the whole house
     this.scene.add(this.key, this.key.target);
 
     // ---- post-processing
@@ -80,7 +75,7 @@ export class World {
     this.gtao.updateGtaoMaterial({ radius: 0.22, distanceExponent: 1.4, thickness: 1.2, scale: 1, samples: 12 });
     this.gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 });
     this.composer.addPass(this.gtao);
-    this.bloom = new UnrealBloomPass(new THREE.Vector2(size.x, size.y), 0.55, 0.4, 3.2);
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(size.x, size.y), 0.55, 0.4, 4.2);
     this.composer.addPass(this.bloom);
     this.composer.addPass(new OutputPass());
 
@@ -106,10 +101,9 @@ export class World {
     this.gtao.setSize(Math.round(size.x / 2), Math.round(size.y / 2));
   }
 
-  attachRoom(room) {
+  attachRoom(room, house) {
     this.room = room;
-    room.city.paint(0, '#9fb0c4');
-    this.lastCityNight = -1;
+    this.house = house;
   }
 
   /** Hours 0..24. Moves the sun, recolours the sky, turns lamps on at night. */
@@ -122,7 +116,8 @@ export class World {
     const night = 1 - day;
 
     const sunAng = ((h - 6) / 12) * Math.PI;
-    this.sun.position.set(-3.6 + Math.cos(sunAng) * 3, 1.5 + Math.max(0.1, Math.sin(sunAng)) * 5, 9);
+    const sunDir = new THREE.Vector3(-0.35 + Math.cos(sunAng) * 0.45, 0.15 + Math.max(0.08, Math.sin(sunAng)) * 0.8, 0.75).normalize();
+    this.sun.position.copy(this.sunCenter).addScaledVector(sunDir, 28);
     this.sun.intensity = 3.4 * day;
     this.sun.color.setRGB(1, lerp(0.62, 0.95, day * (1 - dusk)), lerp(0.4, 0.86, day * (1 - dusk)));
     this.key.intensity = lerp(0.35, 1.1, day);
@@ -131,12 +126,11 @@ export class World {
     this.scene.environmentIntensity = lerp(0.18, 0.5, day);
     this.renderer.toneMappingExposure = lerp(0.95, 1.0, day);
     this.bg.setRGB(lerp(0.09, 0.89, day), lerp(0.1, 0.91, day), lerp(0.15, 0.94, day));
-    this.scene.fog.color.copy(this.bg);
 
-    const u = room.sky.uniforms;
+    const u = this.house.sky.uniforms;
     u.top.value.setRGB(lerp(0.02, 0.33, day) + dusk * 0.2, lerp(0.03, 0.6, day), lerp(0.1, 1.0, day));
     u.bottom.value.setRGB(lerp(0.08, 0.82, day) + dusk * 0.35, lerp(0.07, 0.9, day) - dusk * 0.15, lerp(0.16, 1.0, day) - dusk * 0.35);
-    u.sunPos.value.set(0.5 + Math.cos(sunAng) * 0.35, 0.15 + Math.sin(sunAng) * 0.7);
+    u.sunDir.value.copy(sunDir);
     u.sunColor.value.setRGB(1, lerp(0.55, 0.95, 1 - dusk), lerp(0.35, 0.85, 1 - dusk)).multiplyScalar(day > 0.05 ? 1 : 0.0);
     u.stars.value = THREE.MathUtils.smoothstep(night, 0.5, 1);
 
@@ -146,25 +140,10 @@ export class World {
     room.lamp.shade.emissiveIntensity = 0.5 * lampOn;
     room.neon.light.intensity = 0.25 + 1.2 * night;
     room.screenLight.intensity = 0.12 + 0.5 * night;
-
-    const cityNight = Math.round(night * 8) / 8;
-    if (cityNight !== this.lastCityNight) {
-      this.lastCityNight = cityNight;
-      const sil = `rgb(${Math.round(lerp(18, 150, day))},${Math.round(lerp(22, 168, day))},${Math.round(lerp(40, 192, day))})`;
-      room.city.paint(cityNight, sil);
-    }
+    for (const l of this.house.lights) l.intensity = 6 * lampOn;
+    this.house.chargeGlow.emissiveIntensity = 0.4 + 1.6 * night;
     this.hours = h;
     this.night = night;
-  }
-
-  updateWalls() {
-    const cam = this.camera.position;
-    for (const w of this.room.walls) {
-      const n = w.userData.wallNormal;
-      const p = w.getWorldPosition(new THREE.Vector3());
-      const visible = cam.clone().sub(p).dot(n) > 0.35; // hide a wall once the camera gets close to or behind it
-      w.visible = visible;
-    }
   }
 
   /**

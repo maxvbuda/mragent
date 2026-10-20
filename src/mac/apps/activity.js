@@ -1,7 +1,7 @@
 import { h } from '../ui.js';
 
 const SYSTEM = [
-  ['kernel_task', 'root', 2.1, 2900], ['WindowServer', '_windowserver', 3.2, 640], ['robotd', 'mragent', 38, 2100], ['coffeed', 'mragent', 0.6, 48],
+  ['kernel_task', 'root', 2.1, 2900], ['WindowServer', '_windowserver', 3.2, 640], ['robotd', 'mragent', 38, 2100], ['matchad', 'mragent', 0.6, 48],
   ['gaitd', 'mragent', 4, 220], ['neural_engine', 'root', 12, 8400], ['visord', 'mragent', 1.3, 96], ['fingerctl', 'mragent', 2.4, 64],
   ['launchd', 'root', 0.1, 24], ['mds_stores', 'root', 0.8, 310], ['Spotlight', 'mragent', 0.2, 120], ['bluetoothd', 'root', 0.1, 18],
 ];

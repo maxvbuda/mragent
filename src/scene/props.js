@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { planarUV, rugTexture, woodTexture, floorTextures } from './assets.js';
+import { planarUV, rugTexture } from './assets.js';
 
 const UI = '-apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif';
 
@@ -66,60 +66,12 @@ export function buildRoom(scene, geos, layout, M, screen) {
   scene.add(room);
   out.room = room;
 
-  // ------------------------------------------------------------ shell: floor slab, walls, rug
+  // the walls, floors and sky now come from house.js; the office keeps its round rug
   const R = layout.room;
-  const front = -1.75;
-  const floorW = R.right - R.left, floorD = R.back - front;
-  const ft = floorTextures();
-  for (const t of [ft.map, ft.normalMap, ft.roughnessMap]) t.repeat.set(floorW / ft.tileMeters, floorD / ft.tileMeters);
-  const floorMat = new THREE.MeshPhysicalMaterial({
-    map: ft.map, normalMap: ft.normalMap, normalScale: new THREE.Vector2(0.6, 0.6), roughnessMap: ft.roughnessMap, roughness: 1,
-    clearcoat: 0.35, clearcoatRoughness: 0.28, envMapIntensity: 0.9,
-  });
-  const floor = mesh(new THREE.PlaneGeometry(floorW, floorD), floorMat, room, { cast: false });
-  floor.rotation.x = -Math.PI / 2;
-  floor.position.set(0, 0, (R.back + front) / 2);
-  floor.name = 'floor';
-  const slabMat = new THREE.MeshStandardMaterial({ color: 0xd9d5ce, roughness: 0.8 });
-  const slab = mesh(new THREE.BoxGeometry(floorW + 0.24, 0.24, floorD + 0.12), slabMat, room, { cast: false });
-  slab.position.set(0, -0.136, (R.back + front) / 2 + 0.06); // top sits 1.6 cm under the floor: no z-fighting
-  const trim = mesh(new THREE.BoxGeometry(floorW + 0.25, 0.012, floorD + 0.13), new THREE.MeshStandardMaterial({ color: 0xa98760, roughness: 0.6 }), room, { cast: false });
-  trim.position.set(0, -0.012, (R.back + front) / 2 + 0.06);
-
+  const [ww, wh] = layout.window.size;
   const rug = mesh(new THREE.CircleGeometry(1.35, 96), new THREE.MeshStandardMaterial({ map: rugTexture(), roughness: 1 }), room, { cast: false });
   rug.rotation.x = -Math.PI / 2;
   rug.position.set(0, 0.004, 0.15);
-
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0xe9e5de, roughness: 0.92 });
-  const accentMat = new THREE.MeshStandardMaterial({ color: 0xb9c7bd, roughness: 0.9 });
-  const T = 0.12;
-  // back wall with a hole for the window
-  const win = P.window;
-  const [ww, wh] = layout.window.size;
-  const wx = win.pos[0], wy = win.pos[1];
-  const shape = new THREE.Shape();
-  shape.moveTo(R.left - T, 0); shape.lineTo(R.right + T, 0); shape.lineTo(R.right + T, R.height); shape.lineTo(R.left - T, R.height); shape.closePath();
-  const hole = new THREE.Path();
-  hole.moveTo(wx - ww / 2 + 0.01, wy + 0.01); hole.lineTo(wx + ww / 2 - 0.01, wy + 0.01); hole.lineTo(wx + ww / 2 - 0.01, wy + wh - 0.01); hole.lineTo(wx - ww / 2 + 0.01, wy + wh - 0.01); hole.closePath();
-  shape.holes.push(hole);
-  const backWall = mesh(new THREE.ExtrudeGeometry(shape, { depth: T, bevelEnabled: false }), accentMat, room);
-  backWall.position.set(0, 0, R.back);
-  backWall.userData.wallNormal = new THREE.Vector3(0, 0, -1);
-  const sideGeo = new THREE.BoxGeometry(T, R.height, R.back - front + T);
-  const rightWall = mesh(sideGeo, wallMat, room);
-  rightWall.position.set(R.right + T / 2, R.height / 2, (R.back + front) / 2 + T / 2);
-  rightWall.userData.wallNormal = new THREE.Vector3(-1, 0, 0);
-  const leftWall = mesh(sideGeo, wallMat, room);
-  leftWall.position.set(R.left - T / 2, R.height / 2, (R.back + front) / 2 + T / 2);
-  leftWall.userData.wallNormal = new THREE.Vector3(1, 0, 0);
-  out.walls = [backWall, rightWall, leftWall];
-  const skirt = new THREE.MeshStandardMaterial({ color: 0xf4f2ee, roughness: 0.6 });
-  const sk1 = mesh(new THREE.BoxGeometry(floorW, 0.09, 0.016), skirt, backWall, { cast: false });
-  sk1.position.set(0, 0.045, -0.008);
-  [rightWall, leftWall].forEach((wall, i) => {
-    const sk = mesh(new THREE.BoxGeometry(0.016, 0.09, R.back - front), skirt, wall, { cast: false });
-    sk.position.set(i === 0 ? -T / 2 - 0.008 : T / 2 + 0.008, 0.045 - R.height / 2, -T / 2);
-  });
 
   // ------------------------------------------------------------ desk
   const desk = place(new THREE.Group(), P.desk);
@@ -259,7 +211,7 @@ export function buildRoom(scene, geos, layout, M, screen) {
   mesh(geos.coffeeTank, M.glass, cm, { cast: false });
   const buttonMat = M.button.clone();
   mesh(geos.coffeeButton, buttonMat, cm);
-  const stream = mesh(new THREE.CylinderGeometry(0.0035, 0.0045, 1, 10), new THREE.MeshPhysicalMaterial({ color: 0x3a1f10, roughness: 0.1, clearcoat: 1 }), cm, { cast: false });
+  const stream = mesh(new THREE.CylinderGeometry(0.0035, 0.0045, 1, 10), new THREE.MeshPhysicalMaterial({ color: 0x6f9a34, roughness: 0.3, clearcoat: 0.6 }), cm, { cast: false });
   stream.visible = false;
   out.coffeeMachine = cm;
   out.coffeeButtonMat = buttonMat;
@@ -288,21 +240,13 @@ export function buildRoom(scene, geos, layout, M, screen) {
   buildPlant(fp, geos, M);
   out.plantFloor = fp;
 
-  // ------------------------------------------------------------ window, sky, city
+  // ------------------------------------------------------------ office window
   const wnd = place(new THREE.Group(), P.window);
   room.add(wnd);
   mesh(geos.windowFrame, M.frameWhite, wnd);
   mesh(geos.windowSill, M.frameWhite, wnd);
   const glass = mesh(new THREE.PlaneGeometry(ww - 0.1, wh - 0.1), new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.02, transparent: true, opacity: 0.08, clearcoat: 1, depthWrite: false }), wnd, { cast: false });
   glass.position.set(0, wh / 2, layout.window.glassZ ?? 0.06); // in the middle of the wall, with the mullions
-  const sky = buildSky();
-  sky.mesh.position.set(wx, 1.6, R.back + 3.2);
-  room.add(sky.mesh);
-  const city = buildCity();
-  city.mesh.position.set(wx, 0.4, R.back + 2.6);
-  room.add(city.mesh);
-  out.sky = sky;
-  out.city = city;
 
   // ------------------------------------------------------------ wall art
   const blueprint = mesh(new THREE.PlaneGeometry(0.9, 1.2), new THREE.MeshStandardMaterial({ map: blueprintTexture(), roughness: 0.6 }), room, { cast: false });
@@ -448,7 +392,7 @@ function stickerTexture() {
     });
     sticker(700, 840, 0.04, () => {
       x.fillStyle = '#f6f1e7'; rr(x, -210, -36, 420, 72, 10); x.fill();
-      x.shadowBlur = 0; x.fillStyle = '#c2453d'; x.font = `700 32px ${UI}`; x.textAlign = 'center'; x.fillText('sudo make me a coffee', 0, 11);
+      x.shadowBlur = 0; x.fillStyle = '#c2453d'; x.font = `700 32px ${UI}`; x.textAlign = 'center'; x.fillText('sudo make me a matcha', 0, 11);
     });
   });
 }
@@ -528,75 +472,4 @@ function neonTexture() {
     glowText('</>', 220, 270, '#49e3ff', 200);
     glowText('keep shipping', 800, 260, '#ff4fa0', 150);
   });
-}
-
-function buildSky() {
-  const uniforms = {
-    top: { value: new THREE.Color(0x6fb6ff) }, bottom: { value: new THREE.Color(0xd8ecff) },
-    sunPos: { value: new THREE.Vector2(0.3, 0.6) }, sunColor: { value: new THREE.Color(0xfff2d0) },
-    stars: { value: 0 }, time: { value: 0 },
-  };
-  const mat = new THREE.ShaderMaterial({
-    uniforms,
-    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
-    fragmentShader: `
-      uniform vec3 top; uniform vec3 bottom; uniform vec2 sunPos; uniform vec3 sunColor; uniform float stars; uniform float time;
-      varying vec2 vUv;
-      float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
-      float noise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
-        return mix(mix(hash(i),hash(i+vec2(1,0)),f.x), mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x), f.y); }
-      void main(){
-        vec3 col = mix(bottom, top, smoothstep(0.0, 1.0, vUv.y));
-        float d = distance(vUv * vec2(1.6, 1.0), sunPos * vec2(1.6, 1.0));
-        col += sunColor * (smoothstep(0.06, 0.0, d) * 2.0 + smoothstep(0.5, 0.0, d) * 0.25);
-        float c = noise(vUv * vec2(6.0, 14.0) + vec2(time * 0.01, 0.0)) * noise(vUv * vec2(13.0, 30.0) - vec2(time * 0.015, 0.0));
-        col = mix(col, mix(vec3(1.0), sunColor, 0.3) * (0.5 + 0.5 * (1.0 - stars)), smoothstep(0.18, 0.45, c) * 0.55 * smoothstep(0.25, 0.6, vUv.y));
-        float s = step(0.9975, hash(floor(vUv * 600.0))) * stars * (0.6 + 0.4 * sin(time * 3.0 + hash(floor(vUv * 600.0)) * 40.0));
-        col += vec3(s);
-        gl_FragColor = vec4(col, 1.0);
-        #include <colorspace_fragment>
-      }`,
-    depthWrite: false,
-  });
-  const meshSky = new THREE.Mesh(new THREE.PlaneGeometry(9, 5), mat);
-  meshSky.rotation.y = Math.PI;
-  return { mesh: meshSky, uniforms };
-}
-
-function buildCity() {
-  const W = 2048, H = 512;
-  const c = document.createElement('canvas');
-  c.width = W; c.height = H;
-  const x = c.getContext('2d');
-  const buildings = [];
-  let px = 0;
-  let seed = 4;
-  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  while (px < W) {
-    const bw = 60 + rnd() * 140, bh = 120 + rnd() * 330;
-    buildings.push([px, bw, bh, rnd()]);
-    px += bw + 4;
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, toneMapped: false, depthWrite: false });
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(7, 1.75), mat);
-  m.rotation.y = Math.PI;
-  const paint = (night, silhouette) => {
-    x.clearRect(0, 0, W, H);
-    for (const [bx, bw, bh, r] of buildings) {
-      x.fillStyle = silhouette;
-      x.fillRect(bx, H - bh, bw, bh);
-      if (r > 0.6) x.fillRect(bx + bw * 0.4, H - bh - 30, 6, 30);
-      for (let wy = H - bh + 16; wy < H - 10; wy += 22) {
-        for (let wx2 = bx + 10; wx2 < bx + bw - 14; wx2 += 18) {
-          const on = ((wx2 * 7 + wy * 13) % 11) / 11 < night * 0.75;
-          x.fillStyle = on ? `rgba(255,${200 + ((wx2 * 3) % 40)},${120 + ((wy * 5) % 60)},${0.85})` : `rgba(255,255,255,${0.06 * (1 - night)})`;
-          x.fillRect(wx2, wy, 9, 12);
-        }
-      }
-    }
-    tex.needsUpdate = true;
-  };
-  return { mesh: m, paint };
 }

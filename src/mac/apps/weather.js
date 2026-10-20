@@ -20,7 +20,7 @@ export default {
       h('div.wx-top', {}, h('small', { text: 'MY LOCATION' }), h('h1', { text: 'Silicon Valley' }), h('div.wx-temp', { text: `${now}°` }), h('p', { text: night ? 'Clear night · stars out' : 'Mostly sunny' }), h('small', { text: `H:${now + 4}°  L:${now - 6}°` })),
       h('div.wx-card', {}, h('small.wx-card-h', { text: night ? 'Clear conditions will continue all night.' : 'Sunny conditions expected around the desk. Perfect walking weather.' }), h('div.wx-hours', {}, ...hourly)),
       h('div.wx-card', {}, h('small.wx-card-h', { text: '10-DAY FORECAST' }), ...daily),
-      h('div.wx-grid', {}, ...[['UV INDEX', night ? '0' : '6', night ? 'Low' : 'High'], ['SUNSET', '18:42', 'Golden hour 18:05'], ['WIND', '9 km/h', 'Gusts 18 km/h'], ['COFFEE INDEX', '10/10', 'Ideal brewing weather']].map(([k, v, s]) => h('div.wx-card.sm', {}, h('small.wx-card-h', { text: k }), h('b', { text: v }), h('small', { text: s })))));
+      h('div.wx-grid', {}, ...[['UV INDEX', night ? '0' : '6', night ? 'Low' : 'High'], ['SUNSET', '18:42', 'Golden hour 18:05'], ['WIND', '9 km/h', 'Gusts 18 km/h'], ['MATCHA INDEX', '10/10', 'Ideal whisking weather']].map(([k, v, s]) => h('div.wx-card.sm', {}, h('small.wx-card-h', { text: k }), h('b', { text: v }), h('small', { text: s })))));
     return os.createWindow({ app: this, title: 'Weather', width: 420, height: 640, className: 'win-weather', body: (b) => b.append(h('div.scroll', { style: { height: '100%' } }, root)) });
   },
 };

@@ -8,7 +8,7 @@ export const SNIPPETS = [
   {
     path: 'src/nav/astar.ts',
     lang: 'ts',
-    test: ['$ npm test -- nav', ' PASS  src/nav/astar.test.ts', '  ✓ finds the shortest way to the coffee machine (4 ms)', '  ✓ walks around the desk, not through it (2 ms)', '  ✓ never steps on the cat (1 ms)', 'Tests: 3 passed, 3 total'],
+    test: ['$ npm test -- nav', ' PASS  src/nav/astar.test.ts', '  ✓ finds the shortest way to the matcha machine (4 ms)', '  ✓ walks around the desk, not through it (2 ms)', '  ✓ never steps on the cat (1 ms)', 'Tests: 3 passed, 3 total'],
     commit: 'nav: A* with octile heuristic and corner smoothing',
     code: `import { Grid, Cell } from './grid';
 
@@ -34,7 +34,7 @@ export function findPath(grid: Grid, from: Cell, to: Cell): Cell[] {
       open.push({ ...n, f: cost + octile(n, to) });
     }
   }
-  return []; // boxed in by furniture. Time for a coffee.
+  return []; // boxed in by furniture. Time for a matcha.
 }
 
 const octile = (a: Cell, b: Cell) => {
@@ -44,10 +44,10 @@ const octile = (a: Cell, b: Cell) => {
 `,
   },
   {
-    path: 'firmware/coffee.rs',
+    path: 'firmware/matcha.rs',
     lang: 'rs',
-    test: ['$ cargo test --release', '   Compiling coffee v0.4.2', '    Finished release [optimized] in 0.31s', 'running 4 tests', 'test brew::pressure_is_nine_bar ... ok', 'test brew::never_decaf ... ok', 'test mug::handle_stays_attached ... ok', 'test result: ok. 4 passed; 0 failed'],
-    commit: 'coffee: PID loop holds 9 bar, refuse decaf',
+    test: ['$ cargo test --release', '   Compiling matcha v0.4.2', '    Finished release [optimized] in 0.31s', 'running 4 tests', 'test brew::pressure_is_nine_bar ... ok', 'test brew::never_decaf ... ok', 'test mug::handle_stays_attached ... ok', 'test result: ok. 4 passed; 0 failed'],
+    commit: 'matcha: PID loop holds 9 bar, refuse decaf',
     code: `use crate::hw::{Boiler, Pump, Valve};
 
 pub struct Brew {
@@ -56,7 +56,7 @@ pub struct Brew {
 }
 
 impl Brew {
-    pub fn espresso() -> Self {
+    pub fn matcha() -> Self {
         Self { target_bar: 9.0, pid: Pid::new(0.8, 0.12, 0.04) }
     }
 
@@ -147,16 +147,16 @@ export function Face({ mood, gaze }: { mood: Mood; gaze: [number, number] }) {
   {
     path: 'src/agent/planner.ts',
     lang: 'ts',
-    test: ['$ npm test -- planner', ' PASS  src/agent/planner.test.ts', '  ✓ schedules a coffee when energy < 30% (3 ms)', '  ✓ lets humans use the Mac when they ask nicely (1 ms)', '  ✓ never ships on a Friday afternoon (1 ms)', 'Tests: 3 passed, 3 total'],
+    test: ['$ npm test -- planner', ' PASS  src/agent/planner.test.ts', '  ✓ schedules a matcha when energy < 30% (3 ms)', '  ✓ lets humans use the Mac when they ask nicely (1 ms)', '  ✓ never ships on a Friday afternoon (1 ms)', 'Tests: 3 passed, 3 total'],
     commit: 'agent: utility-based planner for breaks',
     code: `export interface Activity {
-  name: 'code' | 'coffee' | 'stretch' | 'window' | 'books' | 'plant';
+  name: 'code' | 'matcha' | 'stretch' | 'window' | 'books' | 'plant';
   utility(state: AgentState): number;
 }
 
 export const activities: Activity[] = [
   { name: 'code', utility: (s) => 0.6 + s.focus * 0.4 - s.fatigue * 0.5 },
-  { name: 'coffee', utility: (s) => (1 - s.energy) * 1.4 },
+  { name: 'matcha', utility: (s) => (1 - s.energy) * 1.4 },
   { name: 'stretch', utility: (s) => s.minutesSeated / 90 },
   { name: 'window', utility: (s) => s.fatigue * 0.6 + (s.isSunset ? 0.4 : 0) },
   { name: 'books', utility: (s) => s.stuckOnBug ? 0.9 : 0.1 },

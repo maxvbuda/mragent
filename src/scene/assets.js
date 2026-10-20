@@ -178,7 +178,7 @@ export function makeMaterials() {
   M.rubber = new THREE.MeshStandardMaterial({ color: 0x1d1f24, roughness: 0.85, metalness: 0 });
   M.chrome = new THREE.MeshStandardMaterial({ color: 0xf2f4f7, roughness: 0.09, metalness: 1 });
   M.steel = new THREE.MeshStandardMaterial({ color: 0xc9ccd1, roughness: 0.38, metalness: 1 });
-  M.glow = new THREE.MeshStandardMaterial({ color: 0x0b1d24, emissive: 0x49e3ff, emissiveIntensity: 8, roughness: 0.3 });
+  M.glow = new THREE.MeshStandardMaterial({ color: 0x0b1d24, emissive: 0x49e3ff, emissiveIntensity: 10, roughness: 0.3 });
   M.glowSoft = new THREE.MeshStandardMaterial({ color: 0x0b1d24, emissive: 0x49e3ff, emissiveIntensity: 1.6, roughness: 0.3 });
   M.ledGreen = new THREE.MeshStandardMaterial({ color: 0x0b240f, emissive: 0x5dff8a, emissiveIntensity: 2.6 });
   M.cableRed = new THREE.MeshPhysicalMaterial({ color: 0xe0453a, roughness: 0.35, clearcoat: 0.6 });
@@ -194,7 +194,7 @@ export function makeMaterials() {
   M.plasticDark = new THREE.MeshStandardMaterial({ color: 0x23252b, roughness: 0.4, metalness: 0.2 });
   M.alu = new THREE.MeshPhysicalMaterial({ color: 0x8a8f97, roughness: 0.32, metalness: 1, clearcoat: 0.2 });
   M.mug = new THREE.MeshPhysicalMaterial({ color: 0xe8714f, roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.1 });
-  M.coffee = new THREE.MeshPhysicalMaterial({ color: 0x2b170d, roughness: 0.08, clearcoat: 1 });
+  M.coffee = new THREE.MeshPhysicalMaterial({ color: 0x6f9a34, roughness: 0.35, clearcoat: 0.6, sheen: 0.6, sheenColor: new THREE.Color(0xc8e59a) }); // matcha
   M.ceramic = new THREE.MeshPhysicalMaterial({ color: 0xf1eee8, roughness: 0.25, clearcoat: 0.7 });
   M.soil = new THREE.MeshStandardMaterial({ color: 0x3b2a1e, roughness: 1 });
   M.leaf = new THREE.MeshPhysicalMaterial({ color: 0x3e8a52, roughness: 0.5, side: THREE.DoubleSide, sheen: 0.4, sheenColor: new THREE.Color(0x9fe0a8) });

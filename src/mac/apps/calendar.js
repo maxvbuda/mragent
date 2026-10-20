@@ -8,7 +8,7 @@ function seed() {
   const d = new Date();
   const k = (off) => { const x = new Date(d); x.setDate(d.getDate() + off); return dayKey(x); };
   return {
-    [k(0)]: [{ t: '09:30', title: 'Standup with the toaster', c: 0 }, { t: '15:00', title: 'Coffee break ☕', c: 1 }],
+    [k(0)]: [{ t: '09:30', title: 'Standup with the toaster', c: 0 }, { t: '15:00', title: 'Matcha break 🍵', c: 1 }],
     [k(1)]: [{ t: '11:00', title: 'Refactor the universe', c: 2 }],
     [k(2)]: [{ t: '14:00', title: 'Deploy (not on Friday!)', c: 3 }],
     [k(4)]: [{ t: '10:00', title: 'Oil change for servos', c: 4 }],

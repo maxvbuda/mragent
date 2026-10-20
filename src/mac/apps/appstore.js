@@ -8,7 +8,7 @@ export const CATALOG = [
   { id: 'g2048', category: 'Arcade', blurb: 'Slide the tiles, merge the numbers, reach 2048.', size: '8 MB', rating: 4.7, by: 'Bit Studios' },
   { id: 'flappy', category: 'Arcade', blurb: 'Tap to flap a tiny robot through the pipes. Harder than it looks.', size: '12 MB', rating: 4.5, by: 'Pixel Bots' },
   { id: 'stickies', category: 'Work', blurb: 'Colourful sticky notes that stay on your screen.', size: '4 MB', rating: 4.6, by: 'Mr. Agent Labs' },
-  { id: 'dictionary', category: 'Work', blurb: 'Definitions for robots, coders and coffee lovers.', size: '1.2 GB', rating: 4.4, by: 'Lexibot' },
+  { id: 'dictionary', category: 'Work', blurb: 'Definitions for robots, coders and matcha lovers.', size: '1.2 GB', rating: 4.4, by: 'Lexibot' },
 ];
 
 export default {

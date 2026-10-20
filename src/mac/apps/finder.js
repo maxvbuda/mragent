@@ -22,14 +22,14 @@ const PLACES = [
   ]],
   ['Tags', [
     ['Urgent', 'tag:red', glyph.tag('#ff453a')],
-    ['Coffee', 'tag:orange', glyph.tag('#ff9f0a')],
+    ['Matcha', 'tag:orange', glyph.tag('#ff9f0a')],
     ['Shipped', 'tag:green', glyph.tag('#30d158')],
   ]],
 ];
 
 export default {
   id: 'finder', name: 'Finder', icon: 'finder', single: false,
-  about: 'Finder — find things. Mostly coffee recipes.',
+  about: 'Finder — find things. Mostly matcha recipes.',
   menus: (os, win) => [{ title: 'Go', items: [
     ['Recents', 'recents:'], ['Documents', `${HOME}/Documents`], ['Desktop', `${HOME}/Desktop`], ['Downloads', `${HOME}/Downloads`], ['Home', HOME], ['Applications', '/Applications'], ['Projects', `${HOME}/Projects`],
   ].map(([label, path]) => ({ label, action: () => (win?.finder ? win.finder.go(path) : os.launch('finder', { path })) })) }],

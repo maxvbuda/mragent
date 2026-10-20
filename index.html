@@ -20,32 +20,52 @@
       <dl class="stats">
         <div><dt>Lines today</dt><dd id="st-lines">0</dd></div>
         <div><dt>Commits</dt><dd id="st-commits">0</dd></div>
-        <div><dt>Coffees</dt><dd id="st-coffee">0</dd></div>
+        <div><dt>Matchas</dt><dd id="st-coffee">0</dd></div>
       </dl>
-      <div id="energy" data-level="ok" title="Battery: coffee recharges it"><i></i></div>
+      <div id="energy" data-level="ok" title="Battery: matcha recharges it"><i></i></div>
+      <div id="integrity" title="Body integrity" hidden><span>Integrity</span><i><b></b></i></div>
     </header>
 
     <nav class="hud card" id="controls" aria-label="Controls">
       <button data-act="mac" class="primary" title="Use the Mac (M)"><span class="ico">💻</span><span class="lbl">Use the Mac</span><kbd>M</kbd></button>
+      <button data-act="chat" id="btn-chat" title="Talk to Mr. Agent (/)"><span class="ico">💬</span><span class="lbl">Talk</span><kbd>/</kbd></button>
       <span class="sep"></span>
-      <button data-act="coffee" title="Coffee run (C)"><span class="ico">☕</span><span class="lbl">Coffee</span><kbd>C</kbd></button>
-      <button data-act="stretch" title="Stretch (S)"><span class="ico">🙆</span><span class="lbl">Stretch</span><kbd>S</kbd></button>
-      <button data-act="window" title="Look out the window (W)"><span class="ico">🪟</span><span class="lbl">Window</span><kbd>W</kbd></button>
-      <button data-act="dance" title="Dance break (D)"><span class="ico">🎶</span><span class="lbl">Dance</span><kbd>D</kbd></button>
+      <button data-act="coffee" title="Matcha run (C)"><span class="ico">🍵</span><span class="lbl">Matcha</span><kbd>C</kbd></button>
+      <button data-act="stretch" title="Stretch (Y)"><span class="ico">🙆</span><span class="lbl">Stretch</span><kbd>Y</kbd></button>
+      <button data-act="window" title="Look out the window (O)"><span class="ico">🪟</span><span class="lbl">Window</span><kbd>O</kbd></button>
+      <button data-act="dance" title="Dance break (N)"><span class="ico">🎶</span><span class="lbl">Dance</span><kbd>N</kbd></button>
+      <button data-act="tv" title="Watch TV (G)"><span class="ico">📺</span><span class="lbl">TV</span><kbd>G</kbd></button>
+      <button data-act="snack" title="Raid the fridge (B)"><span class="ico">🔋</span><span class="lbl">Fridge</span><kbd>B</kbd></button>
+      <button data-act="tinker" title="Workshop (K)"><span class="ico">🛠</span><span class="lbl">Tinker</span><kbd>K</kbd></button>
+      <button data-act="sleep" title="Nap (Z)"><span class="ico">😴</span><span class="lbl">Nap</span><kbd>Z</kbd></button>
       <button data-act="wave" title="Say hi (H)"><span class="ico">👋</span><span class="lbl">Wave</span><kbd>H</kbd></button>
       <span class="sep"></span>
+      <button data-act="punch" id="btn-punch" title="Punch mode: click him to punch (P)"><span class="ico">🥊</span><span class="lbl">Punch</span><kbd>P</kbd></button>
+      <button data-act="repair" id="btn-repair" title="Repair him (U)"><span class="ico">🔧</span><span class="lbl">Repair</span><kbd>U</kbd></button>
+      <span class="sep"></span>
       <button data-act="time" id="btn-time" title="Time of day (T)"><span class="ico">🕒</span><span class="lbl">Real time</span><kbd>T</kbd></button>
+      <button data-act="walls" id="btn-walls" title="Walls (X)"><span class="ico">🧱</span><span class="lbl">Cutaway</span><kbd>X</kbd></button>
       <button data-act="follow" id="btn-follow" title="Follow the robot (F)"><span class="ico">🎥</span><span class="lbl">Follow</span><kbd>F</kbd></button>
       <button data-act="reset" title="Reset view (R)"><span class="ico">↺</span><span class="lbl">View</span><kbd>R</kbd></button>
       <button data-act="sound" id="btn-sound" title="Sound (V)"><span class="ico">🔊</span><span class="lbl">Sound</span><kbd>V</kbd></button>
     </nav>
 
+    <section class="hud card" id="chat" aria-label="Talk to Mr. Agent" hidden>
+      <header><b>Talk to Mr. Agent</b><button id="chat-close" title="Close (Esc)">✕</button></header>
+      <div id="chat-brain"><span id="chat-model">🧠 Rule-based brain</span><button id="chat-load" hidden>Load Qwen3-1.7B</button><div id="chat-bar" hidden><i></i></div></div>
+      <div id="chat-log"></div>
+      <form id="chat-form" autocomplete="off"><input id="chat-input" placeholder="Ask him to go somewhere, make matcha, dance…" maxlength="300" /><button>Send</button></form>
+    </section>
+
+    <nav class="hud card" id="rooms" aria-label="Rooms"></nav>
     <div id="bubble" class="hud"></div>
+    <div id="kbubble" class="hud bubble-kuma"></div>
     <div id="tip"></div>
     <div id="toast" class="hud"></div>
-    <p class="hud" id="hint">Drag to orbit · scroll to zoom · click the robot or his MacBook</p>
+    <p class="hud" id="hint">WASD walk him around · / talk to him · drag to orbit · 0–7 rooms · click his MacBook or Kuma’s PC</p>
 
     <div id="mac" hidden></div>
+    <div id="win" hidden></div>
 
     <div id="loader">
       <div class="logo"></div>

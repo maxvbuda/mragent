@@ -345,7 +345,7 @@ export class LaptopScreen {
     x.textAlign = 'center';
     x.fillText('You’re using Mr. Agent’s Mac', W / 2, H / 2);
     x.font = `28px ${UI}`;
-    x.fillText('He’s on a coffee break. Be nice to his files.', W / 2, H / 2 + 56);
+    x.fillText('He’s on a matcha break. Be nice to his files.', W / 2, H / 2 + 56);
     x.textAlign = 'left';
     this.texture.needsUpdate = true;
   }
@@ -359,7 +359,7 @@ export class LaptopScreen {
     x.fillRect(0, 0, W, H);
     x.font = `700 60px ${UI}`;
     x.fillStyle = `hsl(${(this.t * 40) % 360},90%,65%)`;
-    x.fillText('</> brb ☕', p.x, p.y + 60);
+    x.fillText('</> brb 🍵', p.x, p.y + 60);
     this.texture.needsUpdate = true;
   }
 }

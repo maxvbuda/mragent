@@ -2,17 +2,17 @@ import * as THREE from 'three';
 
 /** Grid A* over the room floor, with furniture inflated by the robot's radius. */
 export class NavGrid {
-  constructor(layout, { cell = 0.08, radius = 0.3 } = {}) {
-    const R = layout.room;
+  constructor(layout, { cell = 0.08, radius = 0.27, extra = [] } = {}) {
+    const [x0, z0, x1, z1] = layout.house ? layout.house.bounds : [layout.room.left, -1.75, layout.room.right, layout.room.back];
     this.cell = cell;
     this.radius = radius;
-    this.minX = R.left + 0.05;
-    this.maxX = R.right - 0.05;
-    this.minZ = -1.65;
-    this.maxZ = R.back - 0.05;
+    this.minX = x0;
+    this.maxX = x1;
+    this.minZ = z0;
+    this.maxZ = z1;
     this.w = Math.ceil((this.maxX - this.minX) / cell);
     this.h = Math.ceil((this.maxZ - this.minZ) / cell);
-    this.static = layout.obstacles.map((o) => [...o]);
+    this.static = [...layout.obstacles, ...(layout.house?.obstacles || []), ...extra].map((o) => [...o]);
     this.dynamic = [];
     this.rebuild();
   }
@@ -22,19 +22,22 @@ export class NavGrid {
     this.rebuild();
   }
 
+  /** Rasterise every obstacle, grown by the robot's radius, into the grid. */
   rebuild() {
     const { w, h, cell, radius } = this;
     this.blocked = new Uint8Array(w * h);
-    const all = [...this.static, ...this.dynamic];
-    for (let j = 0; j < h; j++) {
-      for (let i = 0; i < w; i++) {
-        const x = this.minX + (i + 0.5) * cell, z = this.minZ + (j + 0.5) * cell;
-        let b = x < this.minX + radius || x > this.maxX - radius || z > this.maxZ - radius || z < this.minZ + 0.05;
-        for (const [ax, az, bx, bz] of all) {
+    const edge = Math.ceil(radius / cell);
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (i < edge || j < edge || i >= w - edge || j >= h - edge) this.blocked[j * w + i] = 1;
+    for (const [ax, az, bx, bz] of [...this.static, ...this.dynamic]) {
+      const i0 = Math.max(0, Math.floor((ax - radius - this.minX) / cell)), i1 = Math.min(w - 1, Math.floor((bx + radius - this.minX) / cell));
+      const j0 = Math.max(0, Math.floor((az - radius - this.minZ) / cell)), j1 = Math.min(h - 1, Math.floor((bz + radius - this.minZ) / cell));
+      for (let j = j0; j <= j1; j++) {
+        const z = this.minZ + (j + 0.5) * cell;
+        for (let i = i0; i <= i1; i++) {
+          const x = this.minX + (i + 0.5) * cell;
           const dx = Math.max(ax - x, 0, x - bx), dz = Math.max(az - z, 0, z - bz);
-          if (dx * dx + dz * dz < radius * radius) { b = true; break; }
+          if (dx * dx + dz * dz < radius * radius) this.blocked[j * w + i] = 1;
         }
-        this.blocked[j * w + i] = b ? 1 : 0;
       }
     }
   }

@@ -71,7 +71,7 @@ export class Widgets {
       const r = os.ctx.robot, b = os.ctx.brain, s = os.ctx.screen;
       el.replaceChildren(
         h('div.wg-row', {}, h('span.wg-av', { html: robotAvatar() }), h('div', {}, h('small', { text: 'MR. AGENT' }), h('b', { text: b.activity }))),
-        h('div.wg-stats', {}, ...[['Battery', `${Math.round(r.energy * 100)}%`], ['Lines', s.linesToday.toLocaleString()], ['Coffees', String(b.stats.coffees)], ['Steps', String(b.stats.steps)]].map(([k, v]) => h('div', {}, h('small', { text: k }), h('b', { text: v })))),
+        h('div.wg-stats', {}, ...[['Battery', `${Math.round(r.energy * 100)}%`], ['Lines', s.linesToday.toLocaleString()], ['Matchas', String(b.stats.coffees)], ['Steps', String(b.stats.steps)]].map(([k, v]) => h('div', {}, h('small', { text: k }), h('b', { text: v })))),
         h('div.wg-bar', {}, h('i', { style: { width: `${Math.round(r.energy * 100)}%` } })));
     } else if (type === 'calendar') {
       const first = new Date(d.getFullYear(), d.getMonth(), 1).getDay();

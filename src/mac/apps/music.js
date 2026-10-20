@@ -8,7 +8,7 @@ export default {
   launch(os) {
     const m = os.music;
     const tracks = LofiPlayer.TRACKS;
-    const art = (i, size = 'big') => h(`div.mu-art.${size}`, { style: { background: `radial-gradient(circle at 30% 30%, hsl(${i * 80 + 20} 90% 70%), transparent 60%), linear-gradient(135deg, hsl(${i * 80} 70% 55%), hsl(${i * 80 + 70} 75% 35%))` } }, h('span', { text: ['☕', '🌙', '⑂', '⚡'][i] }));
+    const art = (i, size = 'big') => h(`div.mu-art.${size}`, { style: { background: `radial-gradient(circle at 30% 30%, hsl(${i * 80 + 20} 90% 70%), transparent 60%), linear-gradient(135deg, hsl(${i * 80} 70% 55%), hsl(${i * 80 + 70} 75% 35%))` } }, h('span', { text: ['🍵', '🌙', '⑂', '⚡'][i] }));
     const list = h('div.mu-list');
     const nowArt = h('div.mu-now-art');
     const title = h('b'); const artist = h('small');
@@ -50,7 +50,7 @@ export default {
       app: this, title: 'Music', width: 760, height: 500, sidebarWidth: 190, className: 'win-music',
       onClose: () => { off(); cancelAnimationFrame(raf); },
       body: (b) => b.append(h('div.split', {},
-        h('div.sb', { style: { width: '190px' } }, h('div.sb-h', { text: 'Apple Music' }), h('div.sb-item.on', {}, '▶︎  Listen Now'), h('div.sb-item', {}, '⊞  Browse'), h('div.sb-item', {}, '📻  Radio'), h('div.sb-h', { text: 'Library' }), h('div.sb-item', {}, '♫  Songs'), h('div.sb-item', {}, '🎤  Artists'), h('div.sb-h', { text: 'Playlists' }), h('div.sb-item', {}, '☕  Coding Coffee'), h('div.sb-item', {}, '🤖  Robot Dance Party')),
+        h('div.sb', { style: { width: '190px' } }, h('div.sb-h', { text: 'Apple Music' }), h('div.sb-item.on', {}, '▶︎  Listen Now'), h('div.sb-item', {}, '⊞  Browse'), h('div.sb-item', {}, '📻  Radio'), h('div.sb-h', { text: 'Library' }), h('div.sb-item', {}, '♫  Songs'), h('div.sb-item', {}, '🎤  Artists'), h('div.sb-h', { text: 'Playlists' }), h('div.sb-item', {}, '🍵  Coding Matcha'), h('div.sb-item', {}, '🤖  Robot Dance Party')),
         h('div.mu-main.scroll', {},
           h('div.mu-hero', {}, nowArt, h('div.mu-hero-txt', {}, h('small', { text: 'PLAYLIST' }), h('h2', { text: 'Lo-fi for Robots' }), h('p', { text: 'Generated live by WebAudio. No two loops are the same.' }),
             h('div.mu-ctls', {}, h('button.mu-ctl', { html: glyph.prev, 'aria-label': 'Previous', onclick: () => m.prev() }), playBtn, h('button.mu-ctl', { html: glyph.next, 'aria-label': 'Next', onclick: () => m.next() })),

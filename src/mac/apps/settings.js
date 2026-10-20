@@ -41,28 +41,28 @@ export default {
           group(
             row('Time of day in the room', select(String(os.ctx.world.timeOverride ?? 'real'), [['real', 'Follow real clock'], ['8.5', 'Morning'], ['13', 'Afternoon'], ['18.7', 'Sunset'], ['22.5', 'Night']], (v) => { os.ctx.world.timeOverride = v; os.timeHook?.(v === 'real' ? 'real' : +v); }), 'Changes the light through the window and the lamp'),
             row('Typing speed', slider(b.typeSpeed || 1, (v) => { b.typeSpeed = v; }, 0.4, 3, 0.1), 'How fast he types on the laptop'),
-            row('Takes breaks on his own', toggle(b.autoBreaks !== false, (v) => { b.autoBreaks = v; }), 'Coffee runs, stretching, window gazing'),
+            row('Takes breaks on his own', toggle(b.autoBreaks !== false, (v) => { b.autoBreaks = v; }), 'Matcha runs, stretching, window gazing'),
           ),
           group(
-            row('Send him on a break', h('div.st-btns', {}, btn('☕ Coffee', () => b.queueActivity('coffee')), btn('🙆 Stretch', () => b.queueActivity('stretch')), btn('🪟 Window', () => b.queueActivity('window')), btn('📚 Books', () => b.queueActivity('bookshelf')), btn('🌿 Plant', () => b.queueActivity('plant'))), 'Happens after you leave the Mac'),
+            row('Send him on a break', h('div.st-btns', {}, btn('🍵 Matcha', () => b.queueActivity('coffee')), btn('🙆 Stretch', () => b.queueActivity('stretch')), btn('🪟 Window', () => b.queueActivity('window')), btn('📚 Books', () => b.queueActivity('bookshelf')), btn('🌿 Plant', () => b.queueActivity('plant'))), 'Happens after you leave the Mac'),
             row('Make him dance', btn(os.music.playing ? 'Stop music' : 'Play music', () => { os.music.toggle(); refresh(); }), 'He dances whenever music is playing'),
           ),
           group(
             row('Lines written today', h('b', { text: s.linesToday.toLocaleString() })),
             row('Commits today', h('b', { text: String(s.commits) })),
-            row('Coffees today', h('b', { text: String(b.stats.coffees) })),
+            row('Matchas today', h('b', { text: String(b.stats.coffees) })),
             row('Steps walked', h('b', { text: String(b.stats.steps) })),
           ),
         ];
       },
       wifi() {
-        const nets = ['BotNet 6G', 'Pretty Fly for a Wi-Fi', 'FBI Surveillance Van', 'Bill Wi the Science Fi', 'Coffee Machine (IoT)'];
+        const nets = ['BotNet 6G', 'Pretty Fly for a Wi-Fi', 'FBI Surveillance Van', 'Bill Wi the Science Fi', 'Matcha Machine (IoT)'];
         return [h('h2', { text: 'Wi-Fi' }), group(row('Wi-Fi', toggle(p().wifi, (v) => os.setPref('wifi', v)))),
           group(...nets.map((n) => row(n, n === p().network ? h('b.st-ok', { text: '✓ Connected' }) : btn('Connect', () => { os.setPref('network', n); refresh(); }), n === p().network ? 'Wi-Fi 9 · 40 Gb/s · 0.2 ms' : 'Secure network')))];
       },
       bluetooth() {
         return [h('h2', { text: 'Bluetooth' }), group(row('Bluetooth', toggle(p().bluetooth, (v) => os.setPref('bluetooth', v)), 'This Mac is discoverable as “Mr. Agent’s MacBook Pro”')),
-          group(row('Magic Keyboard (robot edition)', h('small', { text: 'Connected · 100%' })), row('AirPods Max (Mr. Agent)', h('small', { text: 'Not connected' })), row('Coffee Machine', h('small', { text: 'Connected · 9 bar' })), row('Roomba', h('small', { text: 'Busy' })))];
+          group(row('Magic Keyboard (robot edition)', h('small', { text: 'Connected · 100%' })), row('AirPods Max (Mr. Agent)', h('small', { text: 'Not connected' })), row('Matcha Machine', h('small', { text: 'Connected · 9 bar' })), row('Roomba', h('small', { text: 'Busy' })))];
       },
       general() {
         return [h('h2', { text: 'About' }), h('div.st-about', { html: `<b>${SPECS.model}</b><br><small>${SPECS.year}</small>` }),
@@ -91,7 +91,7 @@ export default {
           group(row('Output device', select('speakers', [['speakers', 'MacBook Pro Speakers (12-speaker array)'], ['robot', 'Mr. Agent’s ear pods']], () => {})))];
       },
       battery() {
-        return [h('h2', { text: 'Battery' }), h('div.st-batt', {}, h('div.st-batt-icon', { html: glyph.battery }), h('div', {}, h('b', { text: '∞%' }), h('small', { text: 'Power source: coffee · Last charged: never' }))),
+        return [h('h2', { text: 'Battery' }), h('div.st-batt', {}, h('div.st-batt-icon', { html: glyph.battery }), h('div', {}, h('b', { text: '∞%' }), h('small', { text: 'Power source: matcha · Last charged: never' }))),
           group(row('Battery health', h('small.st-val', { text: 'Immortal' })), row('Cycle count', h('small.st-val', { text: '0' })), row('Low Power Mode', select('never', [['never', 'Never'], ['always', 'Always (pointless)']], () => {})), row('Optimized charging', toggle(false, () => {}), 'Not needed for an infinite battery'))];
       },
       privacy() {

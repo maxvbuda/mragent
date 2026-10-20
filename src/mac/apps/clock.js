@@ -12,7 +12,7 @@ export default {
     let sw = { t: 0, run: false, laps: [], last: 0 };
     let timer = { total: 300, left: 300, run: false, last: 0 };
     let lastSec = -1;
-    let alarms = [{ t: '07:00', label: 'Wake up, servos', on: true }, { t: '09:30', label: 'Standup with the toaster', on: true }, { t: '15:00', label: 'Coffee ☕', on: false }];
+    let alarms = [{ t: '07:00', label: 'Wake up, servos', on: true }, { t: '09:30', label: 'Standup with the toaster', on: true }, { t: '15:00', label: 'Matcha 🍵', on: false }];
     const face = (date) => {
       const s = date.getSeconds(), m = date.getMinutes() + s / 60, hr = (date.getHours() % 12) + m / 60;
       const night = date.getHours() < 6 || date.getHours() >= 19;

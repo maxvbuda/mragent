@@ -29,7 +29,7 @@ class Shell {
     this.cwd = HOME;
     this.hist = JSON.parse(safeGet('mragent.zsh_history') || '[]');
     this.hi = this.hist.length;
-    this.env = { HOME, USER: 'mragent', SHELL: '/bin/zsh', PATH: '/opt/homebrew/bin:/usr/bin:/bin', TERM: 'xterm-256color', LANG: 'en_US.UTF-8', COFFEE: 'espresso' };
+    this.env = { HOME, USER: 'mragent', SHELL: '/bin/zsh', PATH: '/opt/homebrew/bin:/usr/bin:/bin', TERM: 'xterm-256color', LANG: 'en_US.UTF-8', COFFEE: 'matcha' };
     this.out = h('div.t-out');
     this.prompt = h('span.t-prompt');
     this.input = h('input.t-input', { spellcheck: 'false', autocapitalize: 'off', autocomplete: 'off', 'aria-label': 'Terminal input' });
@@ -222,7 +222,7 @@ const CMDS = {
       '  files     ls cd pwd cat head tail touch mkdir rm rmdir mv cp tree find grep wc open nano code',
       '  system    whoami hostname uname sw_vers date cal uptime df free top ps kill sysctl system_profiler neofetch',
       '  dev       git npm node python3 brew curl ping sudo env export which history',
-      '  fun       say sl robotsay fortune matrix coffee weather hack yes',
+      '  fun       say sl robotsay fortune matrix matcha weather hack yes',
       '  shell     echo clear exit   ·  pipes:  ls | grep js | wc -l   ·  redirects:  echo hi > note.txt',
       'Keys: ↑/↓ history · Tab completes · ⌃C interrupts · ⌃L clears',
     ].join('\n');
@@ -388,7 +388,7 @@ const CMDS = {
   },
   nano(args) { if (!args[0]) throw new Error('usage: nano file'); const p = this.path(args[0]); if (!this.vfs.exists(p)) this.vfs.write(p, ''); this.os.openPath(p); return `(opened ${args[0]} in an editor — terminal editors are scary)`; },
   code(args) { this.os.launch('code', args[0] ? { path: this.path(args[0]) } : {}); return null; },
-  df() { return 'Filesystem       Size   Used  Avail Capacity  Mounted on\n/dev/disk3s1s1   1.0P   20G   1.0P     0%    /\ncoffee_fs        ∞      ∞     ∞       0%    /Volumes/Espresso'; },
+  df() { return 'Filesystem       Size   Used  Avail Capacity  Mounted on\n/dev/disk3s1s1   1.0P   20G   1.0P     0%    /\nmatcha_fs        ∞      ∞     ∞       0%    /Volumes/Matcha'; },
   free() { return '              total        used        free\nMem:          8.0Ti       12Gi       7.99Ti\nSwap:            0B          0B   why would I need swap'; },
   sysctl(args) {
     const map = { 'machdep.cpu.brand_string': SPECS.chip, 'hw.ncpu': '1024', 'hw.memsize': '8796093022208', 'hw.model': 'Mac31,1', 'kern.ostype': 'Darwin', 'machdep.cpu.core_count': '1024', 'hw.gpu.cores': '4096' };
@@ -404,7 +404,7 @@ const CMDS = {
       `<b class="c1">OS</b>: macOS 31.0 Big Byte arm64`, `<b class="c1">Host</b>: MacBook Pro (16-inch, 2031)`, `<b class="c1">Kernel</b>: Darwin 31.0.0`,
       `<b class="c1">Uptime</b>: ${Math.floor(performance.now() / 60000)} mins`, `<b class="c1">Packages</b>: 1337 (brew)`, '<b class="c1">Shell</b>: zsh 9.0',
       '<b class="c1">Resolution</b>: 30720x19200 @ 1000Hz', '<b class="c1">Terminal</b>: Terminal.app', `<b class="c1">CPU</b>: ${SPECS.chip} (1024) @ 9.80GHz`,
-      '<b class="c1">GPU</b>: 4096-core Apple GPU (ray tracing 2.0)', '<b class="c1">Memory</b>: 12.4GiB / 8.0TiB', '<b class="c1">Battery</b>: ∞% (coffee-powered)', '',
+      '<b class="c1">GPU</b>: 4096-core Apple GPU (ray tracing 2.0)', '<b class="c1">Memory</b>: 12.4GiB / 8.0TiB', '<b class="c1">Battery</b>: ∞% (matcha-powered)', '',
       ['#ff5f57', '#febc2e', '#28c840', '#49e3ff', '#0a84ff', '#a259ff', '#ff4fa0', '#fff'].map((c) => `<span style="background:${c}">   </span>`).join(''),
     ];
     const rows = Math.max(ROBOT_ASCII.length, info.length);
@@ -412,7 +412,7 @@ const CMDS = {
     return null;
   },
   ps() {
-    const procs = [['1', 'launchd'], ['88', 'kernel_task'], ['144', 'WindowServer'], ['210', 'robotd'], ['211', 'coffeed'], ['212', 'gaitd'], ...this.os.windows.map((w) => [String(1000 + w.id), `${w.app.name}`]), ['9001', '-zsh']];
+    const procs = [['1', 'launchd'], ['88', 'kernel_task'], ['144', 'WindowServer'], ['210', 'robotd'], ['211', 'matchad'], ['212', 'gaitd'], ...this.os.windows.map((w) => [String(1000 + w.id), `${w.app.name}`]), ['9001', '-zsh']];
     return '  PID TTY           TIME CMD\n' + procs.map(([p, c]) => `${p.padStart(5)} ttys001    0:00.0${p.length % 9} ${c}`).join('\n');
   },
   kill(args) {
@@ -429,12 +429,12 @@ const CMDS = {
       const draw = () => {
         if (prog.done) return;
         const apps = this.os.windows.map((w) => w.app.name);
-        const rows = [['kernel_task', 2.1], ['WindowServer', 3.4], ['robotd', 41.2 + Math.random() * 8], ['coffeed', 0.4 + Math.random()], ['gaitd', Math.random() * 6], ['neural_engine', 12 + Math.random() * 20], ...apps.map((a) => [a, Math.random() * 4])]
+        const rows = [['kernel_task', 2.1], ['WindowServer', 3.4], ['robotd', 41.2 + Math.random() * 8], ['matchad', 0.4 + Math.random()], ['gaitd', Math.random() * 6], ['neural_engine', 12 + Math.random() * 20], ...apps.map((a) => [a, Math.random() * 4])]
           .sort((a, b) => b[1] - a[1]);
         el.innerHTML = esc([
           `Processes: ${rows.length + 412} total, 3 running · ${new Date().toLocaleTimeString()}`,
           `Load Avg: 0.0${Math.floor(Math.random() * 9)}, 0.01, 0.00   CPU usage: 0.${Math.floor(Math.random() * 9)}% user, 0.1% sys, 99.4% idle (1,024 cores)`,
-          `PhysMem: 12.4G used (2.1G wired), 7.99T unused.   Coffee: 82% full`,
+          `PhysMem: 12.4G used (2.1G wired), 7.99T unused.   Matcha: 82% full`,
           '',
           'PID    COMMAND          %CPU  MEM     STATE',
           ...rows.map(([n, c], i) => `${String(200 + i * 7).padEnd(7)}${n.slice(0, 16).padEnd(17)}${c.toFixed(1).padStart(4)}  ${String(Math.round(40 + c * 30)).padStart(4)}M   running`),
@@ -467,15 +467,16 @@ const CMDS = {
       'There are 10 kinds of robots: those who understand binary and those who don’t.',
       'It works on my machine. Ship the machine.',
       'A bug is just a feature you haven’t documented yet.',
-      'Coffee: because sleep mode is for laptops.',
+      'Matcha: because sleep mode is for laptops.',
       'Weeks of coding can save you hours of planning.',
       'The best code is no code. The second best is code written by Mr. Agent.',
       'rm -rf node_modules && npm install — the oldest prayer.',
     ][Math.floor(Math.random() * 7)];
   },
-  coffee() {
-    return ['      ( (', '       ) )', '    ........', '    |      |]', '    \\      /', '     `----´', 'Brewing… done. ☕  (Mr. Agent says: get your own.)'].join('\n');
+  matcha() {
+    return ['      ( (', '       ) )', '    ........', '    |      |]', '    \\      /', '     `----´', 'Whisking… done. 🍵  (Mr. Agent says: get your own.)'].join('\n');
   },
+  coffee() { return 'We’re a matcha house now. Try `matcha`.'; },
   weather() {
     const hrs = this.os.ctx.world.hours ?? 12;
     const night = this.os.ctx.world.night > 0.5;
@@ -507,7 +508,7 @@ const CMDS = {
     if (!inProject && sub !== 'help' && sub !== '--version') throw new Error('fatal: not a git repository (or any of the parent directories): .git\n(hint: cd ~/Projects/mr-agent-os)');
     if (sub === 'status') return `On branch main\nYour branch is ahead of 'origin/main' by ${s.commits % 7} commits.\n\nChanges not staged for commit:\n\tmodified:   ${s.snip.path}   (Mr. Agent is typing…)\n`;
     if (sub === 'log') return s.history.map((f, i) => `commit ${(0xabc123 * (i + 7)).toString(16).padEnd(12, 'f')}\nAuthor: Mr. Agent <agent@desk.local>\nDate:   ${new Date(Date.now() - (s.history.length - i) * 3.6e6).toString().slice(0, 24)}\n\n    ${f.commit}\n`).reverse().join('\n');
-    if (sub === 'branch') return '* main\n  feature/learn-to-taste-coffee\n  fix/walk-without-falling';
+    if (sub === 'branch') return '* main\n  feature/learn-to-taste-matcha\n  fix/walk-without-falling';
     if (sub === 'diff') return `diff --git a/${s.snip.path} b/${s.snip.path}\n+${s.typed.split('\n').slice(-3).join('\n+')}`;
     if (sub === 'push') return 'Enumerating objects: 1024, done.\nWriting objects: 100% (1024/1024), 4.2 MiB | 9.8 GiB/s, done.\nTo github.com:mragent/mr-agent-os.git\n   a1b2c3d..e4f5a6b  main -> main';
     if (sub === '--version') return 'git version 3.14.15 (Apple Git-999)';
@@ -618,7 +619,7 @@ const CMDS = {
   },
   hack() {
     return this.program(async (prog, end) => {
-      const steps = ['Bypassing firewall…', 'Rerouting through 1,024 cores…', 'Decrypting mainframe (ROT13 twice)…', 'Downloading more RAM… 8 TB → 8 TB (already maxed)', 'Accessing coffee machine API…', 'ACCESS GRANTED ☕'];
+      const steps = ['Bypassing firewall…', 'Rerouting through 1,024 cores…', 'Decrypting mainframe (ROT13 twice)…', 'Downloading more RAM… 8 TB → 8 TB (already maxed)', 'Accessing matcha machine API…', 'ACCESS GRANTED 🍵'];
       for (const s of steps) { if (prog.done) return; this.print(`> ${s}`, 'text', 't-ok'); await sleep(500); }
       end();
     });

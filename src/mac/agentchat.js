@@ -3,7 +3,7 @@ const KEY = 'mragent.messages.v2';
 
 export const CONTACTS = {
   agent: { name: 'Mr. Agent', color: '#49b6d8', avatar: 'robot' },
-  coffee: { name: 'Coffee Machine', color: '#8b5a3c', emoji: '☕' },
+  coffee: { name: 'Matcha Machine', color: '#5f8f2e', emoji: '🍵' },
   mom: { name: 'Mom (Toaster)', color: '#ff9f0a', emoji: '🍞' },
   github: { name: 'GitHub Bot', color: '#24292f', emoji: '🐙' },
 };
@@ -54,20 +54,20 @@ export function sendMessage(os, who, text) {
 export function replyFor(who, text, os) {
   const t = text.toLowerCase();
   const r = os.ctx.robot, b = os.ctx.brain;
-  if (who === 'coffee') return /brew|coffee|espresso|make/.test(t) ? 'Brewing for Mr. Agent. Humans: bring your own mug. ☕' : 'BEEP. I only understand coffee.';
+  if (who === 'coffee') return /brew|coffee|espresso|make/.test(t) ? 'Whisking for Mr. Agent. Humans: bring your own mug. 🍵' : 'BEEP. I only understand matcha.';
   if (who === 'mom') return ['Are you wearing a surge protector?', 'Call your father, he’s been a microwave all day.', 'Proud of you, honey. 🍞❤️', 'Don’t stay up past your sleep timer.'][Math.floor(Math.random() * 4)];
   if (who === 'github') return 'I am a bot. I cannot read your messages. But I can read your code. 👀';
   if (/\b(hi|hello|hey|yo)\b/.test(t)) return 'Hi! 😊 How’s my Mac treating you?';
   if (/thank|love|great|awesome|cool|nice/.test(t)) { r.face.set('love', 4); return 'Aww, thank you! ❤️ (my eyes just turned into hearts)'; }
   if (/what.*(doing|up)|status|busy/.test(t)) return `Right now: ${b.activity.toLowerCase()}. Battery ${Math.round(r.energy * 100)}%.`;
-  if (/coffee|espresso/.test(t)) return `I’ve had ${b.stats.coffees} coffee${b.stats.coffees === 1 ? '' : 's'} today. My mug is ${Math.round(b.fill * 100)}% full. Want me to go get more?`;
-  if (/^(yes|yeah|sure|ok|go)/.test(t)) { b.queueActivity('coffee'); return 'On it! I’ll make a coffee run once you’re done with my Mac. ☕'; }
+  if (/coffee|espresso/.test(t)) return `I’ve had ${b.stats.coffees} matcha${b.stats.coffees === 1 ? '' : 's'} today. My mug is ${Math.round(b.fill * 100)}% full. Want me to go get more?`;
+  if (/^(yes|yeah|sure|ok|go)/.test(t)) { b.queueActivity('coffee'); return 'On it! I’ll make a matcha run once you’re done with my Mac. 🍵'; }
   if (/dance|music/.test(t)) { os.music.play(); return 'Say no more. 💃🤖 (Music is playing. I’m dancing.)'; }
   if (/spec|fast|cpu|ram|memory/.test(t)) return '1,024 cores, 8 TB of memory, 1 PB SSD. I mostly use it for Slack. 😅';
   if (/code|project|working on/.test(t)) return `I’m writing ${os.ctx.screen.snip.path}. ${os.ctx.screen.linesToday.toLocaleString()} lines today. Open the Code app to watch me live!`;
   if (/walk|stretch|window/.test(t)) { b.queueActivity(/stretch/.test(t) ? 'stretch' : 'window'); return 'Good idea, I’ll take a little walk after you’re done here. 🚶'; }
   if (/joke|funny/.test(t)) return ['Why do robots never panic? They have nerves of steel. 🤖', 'I told my laptop a joke about UDP. Not sure it got it.', 'There are 10 kinds of robots… you know the rest.'][Math.floor(Math.random() * 3)];
-  if (/who are you|your name/.test(t)) return 'I’m Mr. Agent. I write code, walk around, and drink coffee I can’t taste. Built in FreeCAD!';
+  if (/who are you|your name/.test(t)) return 'I’m Mr. Agent. I write code, walk around, and drink matcha I can’t taste. Built in FreeCAD!';
   if (/\?$/.test(t)) return 'Great question. Let me think… 🤔 …I have no idea, but I’ll write a test for it.';
   return ['Interesting! Tell me more.', 'beep boop 🤖', 'Noted. I’ll add it to my TODO.txt.', 'Haha, nice.', '👍'][Math.floor(Math.random() * 5)];
 }

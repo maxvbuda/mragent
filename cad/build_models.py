@@ -477,11 +477,15 @@ layout["obstacles"] = [  # axis-aligned rectangles in three x/z: [minX, minZ, ma
 ]
 
 
+exec(compile(open(os.path.join(HERE, "house.py")).read(), os.path.join(HERE, "house.py"), "exec"))
+exec(compile(open(os.path.join(HERE, "extras.py")).read(), os.path.join(HERE, "extras.py"), "exec"))
+
+
 # ======================================================================= EXPORT
-def tess(shape, tol):
+def tess(shape, tol, ang=0.33):
     P, N, I = [], [], []
     for f in shape.Faces:
-        m = MeshPart.meshFromShape(Shape=f, LinearDeflection=tol, AngularDeflection=0.33, Relative=False)
+        m = MeshPart.meshFromShape(Shape=f, LinearDeflection=tol, AngularDeflection=ang, Relative=False)
         pts, tris = m.Topology
         if not tris:
             continue
@@ -523,7 +527,8 @@ def b64(fmt, data):
 meshes, stats = {}, []
 for name, shape in parts.items():
     tol = max(0.3, min(2.5, shape.BoundBox.DiagonalLength * 0.0032))
-    P_, N_, I_ = tess(shape, tol)
+    coarse = name not in FINE_PARTS
+    P_, N_, I_ = tess(shape, tol * (2.2 if coarse else 1), 0.6 if coarse else 0.33)
     big = len(P_) // 3 > 65535
     meshes[name] = {"p": b64("f", P_), "n": b64("b", [max(-127, min(127, int(round(v * 127)))) for v in N_]),
                     "i": b64("I" if big else "H", I_), "i32": big}
@@ -549,7 +554,8 @@ MAT = {"waistSpring": "chrome", "neck": "chrome", "elbowCaps": "chrome", "wrist"
        "chestLight": "glow", "earGlow": "glow", "antennaTip": "glow", "batteryLeds": "glow", "forearmLed": "glow",
        "coffeeButton": "glow", "lampBulb": "glow", "visor": "visor", "deskTop": "wood", "sideboardTop": "wood",
        "shelf": "wood", "laptopBase": "alu", "laptopLid": "alu", "chairSeat": "fabric", "chairBack": "fabric",
-       "mug": "mug", "coffee": "brown", "soil": "brown", "leaves": "leaf", "stems": "leaf", "pot": "cream",
+       "mug": "mug", "coffee": "leaf", "chestPlate": "white", "coreGlow": "glow", "coreCage": "chrome", "spineCore": "chrome",
+       "batteryCells": "leaf", "batteryCaps": "chrome", "pcbBoards": "leaf", "servos": "dark", "wireRed": "red", "wireBlue": "blue", "wireYellow": "yellow", "soil": "brown", "leaves": "leaf", "stems": "leaf", "pot": "cream",
        "cableRed": "red", "cableBlue": "blue", "cableYellow": "yellow", "cableSockets": "dark", "deskFrame": "white", "windowFrame": "white",
        "windowSill": "white", "sideboard": "cream", "lampShade": "cream", "lampBase": "dark", "notebook": "blue",
        "globe": "blue", "head": "white", "torso": "white", "hips": "white", "ears": "white", "shoulderPad": "white",
@@ -576,9 +582,13 @@ def show(label, part, placement):
 waist = Pl(0, 0, 550) * Pl(axis=(1, 0, 0), deg=-7)
 for n in ("waistCore", "waistSpring", "hips", "hipJoints"):
     show(n, n, Pl(0, 0, 550))
-for n in ("torso", "torsoSeam", "chestLight", "chestRing", "backpack", "batteryLeds", "backVent"):
+for n in ("torso", "torsoSeam", "backpack", "batteryLeds", "backVent", "spineCore", "coreGlow", "coreCage", "batteryCells",
+          "batteryCaps", "pcbBoards", "pcbChips", "servos", "wireRed", "wireBlue", "wireYellow", "wireBlack"):
     if n in parts:
         show(n, n, waist)
+for n in ("chestPlate", "chestLight", "chestRing"):  # exploded forward so the preview shows his insides
+    if n in parts:
+        show(n, n, waist * Pl(0, 160, 0))
 neck = waist * Pl(0, 0, 470)
 for n in ("neckCollar", "neck", "neckRings", "cableRed", "cableBlue", "cableYellow"):
     show(n, n, neck)
@@ -642,6 +652,7 @@ for n in ("lampBase", "lampPole", "lampShade", "lampBulb"):
 for n in ("windowFrame", "windowSill"):
     show(n, n, Pl(-1250, -2900, 820))
 
+preview_house(doc)
 doc.recompute()
 try:
     import FreeCADGui as Gui

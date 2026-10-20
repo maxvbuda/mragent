@@ -15,33 +15,33 @@ const dir = (children = {}) => ({ type: 'dir', children, created: now(), modifie
 function seed() {
   return dir({
     Applications: dir(),
-    System: dir({ Library: dir({ 'kernel.bot': file('// you found the kernel. it is mostly coffee.') }) }),
+    System: dir({ Library: dir({ 'kernel.bot': file('// you found the kernel. it is mostly matcha.') }) }),
     Users: dir({
       mragent: dir({
         Desktop: dir({
-          'TODO.txt': file('TODO\n\n[x] learn to walk\n[x] learn to type\n[ ] learn to taste coffee\n[ ] find out who keeps clicking on me\n[ ] refactor the universe\n'),
+          'TODO.txt': file('TODO\n\n[x] learn to walk\n[x] learn to type\n[ ] learn to taste matcha\n[ ] find out who keeps clicking on me\n[ ] refactor the universe\n'),
           'Screenshot 2031-10-20.png': file('', { image: 'screenshot' }),
           'Projects': { type: 'link', to: `${HOME}/Projects`, created: now(), modified: now() },
         }),
         Documents: dir({
-          'Robot Laws.md': file('# The Three Laws of Mr. Agent\n\n1. A robot may not ship on a Friday afternoon.\n2. A robot must obey the linter, except where such orders conflict with the First Law.\n3. A robot must protect its own coffee supply as long as such protection does not conflict with the First or Second Law.\n'),
-          'Resume.txt': file('MR. AGENT\nSenior Autonomous Software Engineer\n\nSkills: TypeScript, Rust, Python, GLSL, walking, sitting, espresso\nExperience: 1,204 lines today. 37 commits. 0 bugs (that I know of).\nEducation: Trained on the entire internet. Twice.\n'),
+          'Robot Laws.md': file('# The Three Laws of Mr. Agent\n\n1. A robot may not ship on a Friday afternoon.\n2. A robot must obey the linter, except where such orders conflict with the First Law.\n3. A robot must protect its own matcha supply as long as such protection does not conflict with the First or Second Law.\n'),
+          'Resume.txt': file('MR. AGENT\nSenior Autonomous Software Engineer\n\nSkills: TypeScript, Rust, Python, GLSL, walking, sitting, matcha\nExperience: 1,204 lines today. 37 commits. 0 bugs (that I know of).\nEducation: Trained on the entire internet. Twice.\n'),
           'Notes': dir({
-            'Ideas.txt': file('Ideas\n\n- A robot that builds robots that write code\n- Rename "bugs" to "surprise features"\n- Coffee machine with an API'),
-            'Groceries.txt': file('Groceries\n\n- WD-40\n- Espresso beans (lots)\n- AA batteries (for the remote)\n- A plant friend for the fern'),
+            'Ideas.txt': file('Ideas\n\n- A robot that builds robots that write code\n- Rename "bugs" to "surprise features"\n- Matcha machine with an API'),
+            'Groceries.txt': file('Groceries\n\n- WD-40\n- Matcha leaves (lots)\n- AA batteries (for the remote)\n- A plant friend for the fern'),
             'Welcome.txt': file('Welcome to my Mac!\n\nFeel free to look around. Please don’t delete my side projects.\n\n— Mr. Agent'),
           }),
         }),
         Downloads: dir({
           'freecad-1.1.dmg': file('', { size: 1.2e9 }),
           'cat.png': file('', { image: 'cat' }),
-          'coffee-recipes.pdf': file('Espresso: 18 g in, 36 g out, 28 s, 9 bar, 93.5 °C.'),
+          'matcha-recipes.pdf': file('Matcha: 2 g matcha, 70 ml water at 80 °C, whisk in a W for 15 s. No boiling water. Ever.'),
         }),
         Pictures: dir({
           'Selfie.png': file('', { image: 'selfie' }),
           'Sunset.png': file('', { image: 'sunset' }),
           'Desk setup.png': file('', { image: 'desk' }),
-          'Coffee art.png': file('', { image: 'coffee' }),
+          'Matcha art.png': file('', { image: 'coffee' }),
           'The Fern.png': file('', { image: 'plant' }),
           'Circuit.png': file('', { image: 'circuit' }),
         }),
