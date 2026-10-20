@@ -65,10 +65,21 @@ export class Kuma {
   }
 
   /** What the Windows PC is doing to him: 'work' | 'update' | 'bsod' | 'popup' | 'win'. */
-  react(event) {
+  react(event, data) {
     if (event === 'bsod') { this.slam(); this.setMood('angry'); this.say(pick(['NOT AGAIN.', 'IRQL_NOT_LESS_OR_EQUAL?! I’ll show you less or equal.', 'Blue screen. Of course. Of COURSE.', 'I didn’t even save…'])); }
     else if (event === 'update') { this.state = 'wait'; this.setMood('dizzy'); this.say(pick(['“Working on updates. 0% complete.” Sure.', 'It’s updating. Again. I was mid-sentence.', 'Don’t turn off your PC. As if I could leave.'])); }
-    else if (event === 'popup') { this.setMood('angry'); this.say(pick(['No, I don’t want to try Edge.', 'Stop recommending OneDrive!', 'Who asked for Candy Crush?', 'I said NOT NOW, Copilot.'])); if (Math.random() < 0.5) this.slam(); }
+    else if (event === 'popup') {
+      const app = data?.app || '';
+      const lines = {
+        'Microsoft Edge': ['No, I don’t want to try Edge.', 'EDGE. AGAIN.'], OneDrive: ['Stop recommending OneDrive!', 'I don’t WANT my files in the cloud!'], Copilot: ['I said NOT NOW, Copilot.'],
+        'Microsoft Store': ['Who asked for Candy Crush?'], 'Windows Security': ['Defender quarantined my CODE?!', 'My own program is a trojan now?'], Printers: ['I don’t even OWN a printer!'],
+        Recall: ['Stop screenshotting me!', 'Recall, please forget everything.'], 'PC Health Check': ['I’m ON Windows 11!'], Outlook: ['Where did classic Outlook go?!'], USB: ['I didn’t plug anything in!'],
+        Xbox: ['I never signed up for Game Pass!'], Windows: ['I FINISHED setting it up!'], Bing: ['Nobody uses Bing on purpose.'],
+      }[app] || ['Not another pop-up.', 'Close. CLOSE.'];
+      this.setMood('angry');
+      this.say(pick(lines));
+      if (Math.random() < 0.5) this.slam();
+    }
     else if (event === 'win') { this.cheer = 0; this.setMood('happy'); this.say(pick(['It… compiled? On Windows?', 'IT WORKS!', 'Booted in under five minutes!'])); }
     else { this.state = 'type'; this.setMood('work'); }
   }

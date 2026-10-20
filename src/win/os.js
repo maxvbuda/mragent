@@ -31,6 +31,17 @@ const ICON = {
   clipchamp: tile('linear-gradient(#8a2be2, #5b1aa6)', '🎬'),
   widgets: tile('linear-gradient(#4cc2ff, #0078d4)', '☀️'),
   onedrive: tile('linear-gradient(#0f6cbd, #0a4a8a)', '☁️'),
+  recall: tile('linear-gradient(135deg, #6b4cff, #c13cff)', '🧠'),
+  paint: tile('linear-gradient(#ffb547, #f06292)', '🎨'),
+  gethelp: tile('linear-gradient(#3aa0ff, #1565c0)', '?'),
+  outlook: tile('linear-gradient(#1a8cff, #0058ad)', 'O'),
+  calc: tile('linear-gradient(#5c5c66, #2c2c33)', '🧮'),
+  photos: tile('linear-gradient(#ffd166, #ef476f)', '🖼'),
+  printers: tile('linear-gradient(#a0a8b8, #5f6878)', '🖨'),
+  regedit: tile('linear-gradient(#5aa9e6, #2b6cb0)', '🧩'),
+  health: tile('linear-gradient(#36c2a6, #11806b)', '💙'),
+  cleanup: tile('linear-gradient(#cfd8dc, #90a4ae)', '🧹'),
+  security: tile('linear-gradient(#2d7dd2, #1b4f8a)', '🛡'),
 };
 const icon = (id, size = 32) => {
   const i = ICON[id] || ICON.notepad;
@@ -78,13 +89,10 @@ export class WinOS {
     this.device = h('div.win-device');
     this.screen = h('div.win-screen');
     this.desktop = h('div.win-desktop', { oncontextmenu: (e) => { e.preventDefault(); this.desktopMenu(e); }, onpointerdown: (e) => { if (e.target === this.desktop) this.closeFlyouts(); } });
-    const icons = [['pc', 'This PC', () => this.launch('explorer', 'This PC')], ['recycle', 'Recycle Bin', () => this.launch('recycle')], ['edge', 'Microsoft Edge', () => this.launch('edge')],
-      ['edge', 'Microsoft Edge (2)', () => this.launch('edge')], ['candy', 'Candy Crush Saga', () => this.launch('candy')], ['word', 'Get Office', () => this.launch('store')],
-      ['explorer', 'New folder (7)', () => this.launch('explorer', 'New folder (7)')], ['onedrive', 'OneDrive', () => this.toast(NAGS[1])]];
-    icons.forEach(([ic, label, fn], i) => {
-      const d = h('button.win-dicon', { style: { top: `${12 + (i % 6) * 92}px`, left: `${10 + Math.floor(i / 6) * 90}px` }, ondblclick: fn, onclick: (e) => { this.desktop.querySelectorAll('.win-dicon').forEach((x) => x.classList.remove('sel')); e.currentTarget.classList.add('sel'); } }, icon(ic, 38), h('span', {}, label));
-      this.desktop.append(d);
-    });
+    this.icons = [['pc', 'This PC', 'explorer:This PC'], ['recycle', 'Recycle Bin', 'recycle'], ['edge', 'Microsoft Edge', 'edge'], ['edge', 'Microsoft Edge (2)', 'edge'],
+      ['candy', 'Candy Crush Saga', 'candy'], ['word', 'Get Office', 'store'], ['explorer', 'New folder (7)', 'explorer:New folder (7)'], ['onedrive', 'OneDrive', 'nag:1'], ['recall', 'Recall (preview)', 'recall']];
+    this.edgeCount = 2;
+    this.renderDesktop();
     this.watermark = h('div.win-watermark', {}, h('b', {}, 'Activate Windows'), h('span', {}, 'Go to Settings to activate Windows.'));
     this.layer = h('div.win-layer');
     this.toasts = h('div.win-toasts');
@@ -94,6 +102,52 @@ export class WinOS {
     this.screen.append(this.desktop, this.watermark, this.layer, this.toasts, this.taskbar, this.overlay);
     this.device.append(this.screen, this.leave);
     this.el.append(this.device);
+  }
+
+  renderDesktop() {
+    this.desktop.querySelectorAll('.win-dicon').forEach((x) => x.remove());
+    const run = (act) => { const [app, arg] = act.split(':'); if (app === 'nag') this.toast(NAGS[+arg]); else this.launch(app, arg); };
+    this.icons.forEach(([ic, label, act], i) => {
+      const d = h('button.win-dicon', {
+        style: { top: `${12 + (i % 6) * 92}px`, left: `${10 + Math.floor(i / 6) * 90}px` },
+        ondblclick: () => run(act),
+        onclick: (e) => { this.desktop.querySelectorAll('.win-dicon').forEach((x) => x.classList.remove('sel')); e.currentTarget.classList.add('sel'); },
+        oncontextmenu: (e) => { e.preventDefault(); e.stopPropagation(); this.iconMenu(e, i); },
+      }, icon(ic, 38), h('span', {}, label));
+      this.desktop.append(d);
+    });
+  }
+
+  iconMenu(e, i) {
+    this.closeFlyouts();
+    const [ic, label, act] = this.icons[i];
+    const r = this.screen.getBoundingClientRect();
+    const m = h('div.win-menu', { style: { left: `${e.clientX - r.left}px`, top: `${e.clientY - r.top}px` } });
+    const item = (t, fn) => h('button', { onclick: () => { this.closeFlyouts(); fn(); } }, t);
+    m.append(item('📂  Open', () => this.desktop.querySelectorAll('.win-dicon')[i].dispatchEvent(new MouseEvent('dblclick'))),
+      item('🗑  Delete', () => this.deleteIcon(i)), item('✨  Ask Copilot about this file', () => this.toggleCopilot(true)),
+      item('🔧  Properties', () => this.dialog(`${label} Properties`, `Type: Shortcut\nLocation: C:\\Users\\Kuma\\OneDrive\\Desktop\nSize: 2 KB (synced 41 times today)\nAttributes: ☑ Hidden from you ☑ Shared with Microsoft`, ['OK'])));
+    this.screen.append(m);
+    this.menu = m;
+  }
+
+  deleteIcon(i) {
+    const [ic, label] = this.icons[i];
+    if (ic === 'recycle') { this.dialog('Recycle Bin', 'The Recycle Bin can’t be moved to the Recycle Bin. Nice try, though.', ['OK']); return; }
+    if (ic === 'pc') { this.dialog('This PC', 'You can’t delete This PC. It’s load-bearing.', ['OK']); return; }
+    this.icons.splice(i, 1);
+    this.renderDesktop();
+    this.ctx.audio?.trash?.();
+    if (ic === 'edge') {
+      // it always comes back
+      setTimeout(() => {
+        this.edgeCount++;
+        this.icons.push(['edge', `Microsoft Edge (${this.edgeCount})`, 'edge']);
+        this.renderDesktop();
+        this.toast({ app: 'Microsoft Edge', title: 'We put Microsoft Edge back', body: 'It looked like you lost your browser shortcut, so we restored it for easy access. You’re welcome.', yes: 'Thanks', no: 'Thanks anyway' });
+      }, 3500);
+    } else if (ic === 'candy') this.reinstall = ['candy', 'Candy Crush Saga', 'candy'];
+    else if (ic === 'onedrive') setTimeout(() => this.toast({ app: 'OneDrive', title: 'Your files are still syncing', body: `Removing the OneDrive shortcut doesn’t remove OneDrive. Nothing removes OneDrive.`, yes: 'OK', no: 'Sigh' }), 1200);
   }
 
   buildTaskbar() {
@@ -144,7 +198,7 @@ export class WinOS {
       if (!this.greeted) {
         this.greeted = true;
         this.oobe();
-      } else this.toast({ app: 'Windows', title: 'Welcome back, Kuma', body: 'While you were away, we restored your default browser to Microsoft Edge.', yes: 'Great', no: 'Undo' });
+      } else this.lockScreen();
     }, 650);
   }
 
@@ -179,6 +233,7 @@ export class WinOS {
       if (!ov.hidden) {
         ov.hidden = true;
         this.ctx.audio?.winDing();
+        if (this.reinstall) { this.icons.push(this.reinstall); this.reinstall = null; this.renderDesktop(); setTimeout(() => this.toast({ app: 'Microsoft Store', title: 'Candy Crush Saga is back', body: 'The update reinstalled some apps we think you’ll love.', yes: 'Play', no: 'Not again' }), 2500); }
         if (this.lostWork) { this.lostWork = false; setTimeout(() => this.toast({ app: 'Windows', title: 'We restarted your PC', body: 'Your apps were closed to install important updates. Unsaved work is now in a better place.', yes: 'OK', no: 'Why?' }), 600); }
       }
     }
@@ -216,6 +271,12 @@ export class WinOS {
     else if (/Update/.test(n.app)) this.pc.forceUpdate();
     else if (/Store/.test(n.app)) this.launch('candy');
     else if (/365|Office/.test(n.app)) this.launch('store');
+    else if (/Security|Defender/.test(n.app)) this.launch('security');
+    else if (/Print/.test(n.app)) this.launch('printers');
+    else if (/Recall/.test(n.app)) this.launch('recall');
+    else if (/Health/.test(n.app)) this.launch('health');
+    else if (/Outlook/.test(n.app)) this.launch('outlook');
+    else if (/Xbox/.test(n.app)) this.launch('xbox');
     else if (/OneDrive/.test(n.app)) this.dialog('OneDrive', 'Backing up 24,812 files… Your OneDrive storage is full. Buy more storage?', ['Buy 100 GB', 'Close']);
   }
 
@@ -237,13 +298,39 @@ export class WinOS {
     this.screen.append(page);
   }
 
+  lockScreen() {
+    const now = new Date();
+    const lock = h('div.win-lock', {},
+      h('div.win-lock-time', {}, now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })),
+      h('div.win-lock-date', {}, now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })),
+      h('div.win-lock-spot', {}, '📍 Like what you see? ', h('b', {}, 'This photo was taken somewhere you can’t afford to go.')),
+      h('div.win-lock-hint', {}, 'Click anywhere to sign in'));
+    const signIn = () => {
+      lock.innerHTML = '';
+      const msg = h('p', {}, '');
+      const pin = h('input', { type: 'password', placeholder: 'PIN', maxlength: 6, onkeydown: (e) => { e.stopPropagation(); if (e.key === 'Enter') tryPin(); } });
+      let tries = 0;
+      const tryPin = () => {
+        tries++;
+        if (tries === 1) { msg.textContent = 'That PIN is incorrect. Try again.'; pin.value = ''; return; }
+        if (tries === 2) { msg.textContent = 'Something happened and your PIN isn’t available. Click to set up your PIN again.'; pin.value = ''; return; }
+        lock.classList.add('out');
+        setTimeout(() => { lock.remove(); this.toast({ app: 'Windows', title: 'Welcome back, Kuma', body: 'While you were away, we restored your default browser to Microsoft Edge.', yes: 'Great', no: 'Undo' }); }, 400);
+      };
+      lock.append(h('div.win-lock-card', {}, h('i.win-lock-avatar', {}, 'K'), h('b', {}, 'Kuma'), pin, msg, h('button.link', { onclick: tryPin }, 'Sign-in options'), h('small', {}, 'Hint: it’s the third try that works.')));
+      setTimeout(() => pin.focus(), 50);
+    };
+    lock.addEventListener('click', () => { if (!lock.querySelector('input')) signIn(); }, { once: false });
+    this.screen.append(lock);
+  }
+
   desktopMenu(e) {
     this.closeFlyouts();
     const r = this.screen.getBoundingClientRect();
     const m = h('div.win-menu', { style: { left: `${e.clientX - r.left}px`, top: `${e.clientY - r.top}px` } });
     const item = (label, fn) => h('button', { onclick: () => { this.closeFlyouts(); fn?.(); } }, label);
     m.append(item('🔄  Refresh', () => this.desktop.animate([{ opacity: 0.4 }, { opacity: 1 }], 300)), item('📁  New folder', () => this.toast({ app: 'File Explorer', title: 'New folder (8)', body: 'Created. Also synced to OneDrive. Also shared with nobody (yet).', yes: 'OK', no: 'Undo' })),
-      item('🎨  Personalize', () => this.launch('settings', 'Personalization')), item('🖥  Display settings', () => this.launch('settings', 'System')),
+      item('🎨  Personalize', () => this.launch('settings', 'Personalization')), item('🧠  Recall this moment', () => this.launch('recall')), item('🖥  Display settings', () => this.launch('settings', 'System')),
       h('hr'), item('⋯  Show more options', () => this.legacyMenu(e)));
     this.screen.append(m);
     this.menu = m;
@@ -270,7 +357,8 @@ export class WinOS {
     this.closeFlyouts();
     this.startOpen = true;
     const input = h('input', { placeholder: 'Search for apps, settings, and documents', oninput: () => render() });
-    const pinned = ['edge', 'word', 'excel', 'store', 'explorer', 'settings', 'solitaire', 'spotify', 'xbox', 'tiktok', 'clipchamp', 'notepad', 'terminal', 'taskmgr', 'control', 'candy', 'teams', 'copilot'];
+    const pinned = ['edge', 'word', 'excel', 'store', 'explorer', 'settings', 'outlook', 'paint', 'photos', 'calc', 'solitaire', 'spotify', 'xbox', 'tiktok', 'notepad', 'terminal', 'candy', 'copilot'];
+    let allApps = false;
     const body = h('div.win-start-body');
     const render = () => {
       body.innerHTML = '';
@@ -283,12 +371,23 @@ export class WinOS {
           h('button.win-start-row', { onclick: () => { this.closeFlyouts(); this.launch('edge', `bing:${q}`); } }, '🔍', h('span', {}, `${q} - See more search results`, h('small', {}, 'Opens in Microsoft Edge with Bing. Always.'))));
         return;
       }
+      if (allApps) {
+        const list = h('div.win-start-all');
+        let letter = '';
+        for (const [id, a] of Object.entries(APPS).sort((x, y) => x[1].name.localeCompare(y[1].name))) {
+          const L = a.name[0].toUpperCase();
+          if (L !== letter) { letter = L; list.append(h('div.win-start-letter', {}, L)); }
+          list.append(h('button.win-start-row', { onclick: () => { this.closeFlyouts(); this.launch(id); } }, icon(id, 24), h('span', {}, a.name)));
+        }
+        body.append(h('div.win-start-h', {}, 'All apps', h('button.small', { onclick: () => { allApps = false; render(); } }, '‹ Back')), list);
+        return;
+      }
       const grid = h('div.win-start-grid');
       pinned.forEach((id) => grid.append(h('button.win-start-app', { onclick: () => { this.closeFlyouts(); this.launch(APPS[id] ? id : 'store', APPS[id] ? undefined : id); } }, icon(id, 34), h('span', {}, APPS[id]?.name || adName(id)))));
-      body.append(h('div.win-start-h', {}, 'Pinned', h('button.small', {}, 'All apps ›')), grid,
+      body.append(h('div.win-start-h', {}, 'Pinned', h('button.small', { onclick: () => { allApps = true; render(); } }, 'All apps ›')), grid,
         h('div.win-start-h', {}, 'Recommended', h('button.small', {}, 'More ›')),
         h('div.win-start-rec', {},
-          [['copilot', 'Get started', 'Welcome to Windows'], ['word', 'Try Microsoft 365', 'Promoted'], ['candy', 'Candy Crush Saga', 'Recently added (not by you)'], ['xbox', 'Xbox Game Pass', 'Promoted'], ['notepad', 'agent-notes.txt', '3m ago'], ['edge', 'Make Edge your default', 'Recommended by Microsoft']]
+          [['copilot', 'Get started', 'Welcome to Windows'], ['word', 'Try Microsoft 365', 'Promoted'], ['candy', 'Candy Crush Saga', 'Recently added (not by you)'], ['xbox', 'Xbox Game Pass', 'Promoted'], ['recall', 'Recall remembered 12,408 moments', 'Just now'], ['notepad', 'agent-notes.txt', '3m ago'], ['edge', 'Make Edge your default', 'Recommended by Microsoft']]
             .map(([ic, a, b]) => h('button.win-start-row', { onclick: () => { this.closeFlyouts(); if (ic === 'notepad') this.launch('notepad'); else if (ic === 'candy') this.launch('candy'); else if (ic === 'edge') this.launch('edge'); else this.launch('store', a); } }, icon(ic, 26), h('span', {}, a, h('small', {}, b))))));
     };
     render();
@@ -766,6 +865,265 @@ const APPS = {
       };
       w.body.append(h('div.win-candy-head', {}, '🍬 Candy Crush Saga', score), board, h('small', {}, 'Tap groups of 2+ matching candies. Sweet!'));
       render();
+    },
+  },
+
+  // ---------------------------------------------------------------- Recall: it remembers everything
+  recall: {
+    name: 'Recall (preview)', size: [860, 540], single: true,
+    open(w, arg, os) {
+      w.body.classList.add('col');
+      const snaps = [
+        ['09:02', 'You typed your password into Notepad', '#fef3c7', '🔑 hunter2'], ['09:14', 'Bank of Robots — account overview', '#dcfce7', '💰 Balance: 3 bitcoin (spent on Game Pass)'],
+        ['09:31', 'Searched “how to disable Recall”', '#e0e7ff', '🔍 Bing: 0 results'], ['10:05', 'Blue screen', '#0078d7', ':( 22% complete'],
+        ['10:12', 'Searched “how to disable Recall” (again)', '#e0e7ff', '🔍 Did you mean: enable Recall?'], ['10:40', 'Chat with Mr. Agent', '#f1f5f9', '“I wish I had a Mac”'],
+        ['11:03', 'Typed “I hate Windows”', '#fee2e2', '😠 Sentiment logged'], ['11:20', 'Candy Crush, level 1 (for 2 hours)', '#fce7f3', '🍬 Score 0'],
+      ];
+      const grid = h('div.win-recall-grid');
+      const render = (q = '') => {
+        grid.innerHTML = '';
+        snaps.filter(([, t]) => t.toLowerCase().includes(q.toLowerCase())).forEach(([time, t, bg, inner]) => grid.append(h('button.win-recall-snap', {
+          onclick: () => os.dialog('Recall', `${time} — ${t}\n\nThis snapshot is stored locally, encrypted, and definitely not visible to anyone except you and anyone who uses your PC.`, ['Cool', 'Delete snapshot'], (b) => { if (b !== 'Cool') os.dialog('Recall', 'Snapshot deleted. A new snapshot of you deleting it has been saved.', ['OK']); }),
+        }, h('div.win-recall-img', { style: { background: bg, color: bg === '#0078d7' ? '#fff' : '#333' } }, inner), h('small', {}, time), h('span', {}, t))));
+      };
+      const search = h('input', { placeholder: 'Search your memories (we already did)', oninput: () => render(search.value), onkeydown: (e) => e.stopPropagation() });
+      const toggle = h('button', { onclick: () => os.dialog('Recall', 'To stop saving snapshots, go to Settings › Privacy & security › Recall & snapshots › Advanced › More › Off. A restart is required. Snapshots resume after the next update.', ['Open Settings', 'Never mind'], (b) => { if (b === 'Open Settings') os.launch('settings', 'System'); }) }, '⏺ Saving snapshots: On');
+      w.body.append(h('div.win-recall-head', {}, h('b', {}, '🧠 Recall'), search, toggle), h('div.win-recall-timeline', {}, h('i'), h('span', {}, `Today · ${12408 + Math.floor(Math.random() * 99)} snapshots · 28.6 GB`)), grid);
+      render();
+    },
+  },
+
+  // ---------------------------------------------------------------- Paint (now with AI you can't use)
+  paint: {
+    name: 'Paint', size: [760, 520],
+    open(w, arg, os) {
+      w.body.classList.add('col');
+      const cv = h('canvas.win-paint-cv', { width: 720, height: 380 });
+      const x = cv.getContext('2d');
+      x.fillStyle = '#fff'; x.fillRect(0, 0, 720, 380);
+      let color = '#1b1b1b', down = false;
+      const at = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * (720 / r.width), (e.clientY - r.top) * (380 / r.height)]; };
+      cv.addEventListener('pointerdown', (e) => { down = true; x.beginPath(); x.moveTo(...at(e)); e.stopPropagation(); });
+      cv.addEventListener('pointermove', (e) => { if (!down) return; x.lineTo(...at(e)); x.strokeStyle = color; x.lineWidth = 4; x.lineCap = 'round'; x.stroke(); });
+      window.addEventListener('pointerup', () => { down = false; });
+      const swatches = ['#1b1b1b', '#e81123', '#ff8c00', '#fff100', '#16c60c', '#0078d7', '#886ce4', '#ffffff'].map((c) => h('button.win-swatch', { style: { background: c }, onclick: () => { color = c; } }));
+      const ai = (title, text) => () => os.dialog(title, text, ['Get Microsoft 365', 'Cancel'], (b, i) => { if (!i) os.launch('store'); });
+      w.body.append(h('div.win-paint-bar', {}, ...swatches,
+        h('button', { onclick: ai('Cocreator ✨', 'Describe what you want to create.\n\n…\n\nYou have 0 AI credits remaining. Credits refresh monthly with a Microsoft 365 Personal subscription ($99.99/year).') }, '✨ Cocreator'),
+        h('button', { onclick: () => { x.fillStyle = 'rgba(200,200,200,0.5)'; for (let i = 0; i < 720; i += 20) for (let j = 0; j < 380; j += 20) if ((i + j) / 20 % 2) x.fillRect(i, j, 20, 20); os.toast({ app: 'Paint', title: 'Background removed', body: 'We removed the background. And the foreground. It was hard to tell them apart.', yes: 'Undo', no: 'Keep' }); } }, '🪄 Remove background'),
+        h('button', { onclick: ai('Image Creator', 'Sign in with a Microsoft account to use Image Creator. Image Creator requires a Microsoft account, an internet connection and patience.') }, '🖼 Image Creator'),
+        h('button', { onclick: () => { x.fillStyle = '#fff'; x.fillRect(0, 0, 720, 380); } }, 'Clear')), cv,
+      h('div.win-np-status', {}, h('span', {}, '720 × 380px'), h('span', {}, 'Paint (now with layers, AI, and an account requirement)')));
+    },
+  },
+
+  // ---------------------------------------------------------------- Get Help: the loop
+  gethelp: {
+    name: 'Get Help', size: [520, 520], single: true,
+    open(w, arg, os) {
+      w.body.classList.add('col');
+      const log = h('div.win-cp-log');
+      const bot = (t, opts = []) => {
+        log.append(h('div.bot', {}, t, opts.length ? h('div.win-help-opts', {}, opts.map(([label, fn]) => h('button', { onclick: fn }, label))) : null));
+        log.scrollTop = 1e6;
+      };
+      const loop = () => bot('Have you tried restarting your PC? Was this helpful?', [['Yes', () => bot('Great! We’re glad we could help. 🎉 Please rate us 5 stars.')], ['No', () => {
+        bot('Sorry about that. Here are some articles that might help:', [['📄 How to restart your PC', loop], ['📄 Restarting your PC: an overview', loop], ['📄 Contact support', () => bot('Connecting you to an agent… Estimated wait: 3 hours. Meanwhile, have you tried restarting your PC?', [['Restart now', () => os.pc.forceUpdate()], ['Keep waiting', loop]])]]);
+      }]]);
+      const input = h('input', { placeholder: 'Describe your problem', onkeydown: (e) => {
+        e.stopPropagation();
+        if (e.key !== 'Enter' || !input.value.trim()) return;
+        log.append(h('div.me', {}, input.value));
+        input.value = '';
+        setTimeout(loop, 600);
+      } });
+      w.body.append(log, h('div.win-cp-input', {}, input));
+      bot('Hi, I’m your virtual support agent. In a few words, tell me what’s going on.');
+    },
+  },
+
+  // ---------------------------------------------------------------- Outlook (new): ads in the inbox
+  outlook: {
+    name: 'Outlook (new)', size: [880, 540], single: true,
+    open(w, arg, os) {
+      w.body.classList.add('row');
+      const mails = [
+        { ad: true, from: 'Temu', sub: 'Kuma, your robot arm replacement is 98% off!!', body: 'Ad · This message is an advertisement. It looks exactly like an email so you click it.' },
+        { from: 'Microsoft account team', sub: 'Unusual sign-in activity', body: 'We detected a sign-in from Windows Update Medic Service. If this was you, great. If this wasn’t you, it was also us.' },
+        { from: 'OneDrive', sub: 'You’re running out of storage', body: 'Your OneDrive is 99.6% full (4.98 GB of 5 GB). Your Desktop, Documents and Pictures are syncing. To keep syncing, upgrade to Microsoft 365.' },
+        { from: 'Microsoft Teams', sub: 'You missed a meeting: “Sync about the sync”', body: 'You were invited by: Teams. Attendees: nobody. Recording: unavailable (Teams didn’t load).' },
+        { from: 'Mr. Agent', sub: 'Re: can I borrow your Mac?', body: 'No. But you can come over and look at it. I’ll make matcha. 🍵' },
+        { from: 'Xbox', sub: 'We miss you, Kuma', body: 'It’s been 0 days since you last played. Come back! Game Pass Ultimate is just $19.99/month.' },
+        { from: 'Windows Insider', sub: 'Welcome to the Canary channel', body: 'Thanks for volunteering! (You were volunteered.) Expect new features, missing features, and features that are missing new features.' },
+      ];
+      const list = h('div.win-ol-list');
+      const read = h('div.win-ol-read', {}, h('p', {}, 'Select an item to read'));
+      mails.forEach((m) => list.append(h(`button.win-ol-item${m.ad ? '.ad' : ''}`, { onclick: () => { read.innerHTML = ''; read.append(h('h3', {}, m.sub), h('small', {}, m.ad ? 'Ad · Sponsored' : `From: ${m.from}`), h('p', {}, m.body)); if (m.ad) os.launch('edge', 'bing:temu robot arm'); } }, h('b', {}, m.ad ? `Ad · ${m.from}` : m.from), h('span', {}, m.sub))));
+      w.body.append(h('div.win-ol-nav', {}, h('div.win-ol-toggle', {}, 'New Outlook ', h('i.on'), h('small', {}, 'Can’t switch back')), ...['📥 Inbox (7)', '⭐ Focused', '📤 Sent', '🗑 Deleted', '📁 Archive', '🛒 Shopping (new!)'].map((t) => h('div.win-ol-folder', {}, t))),
+        h('div.win-ol-main', {}, h('div.win-ex-banner', {}, 'Classic Outlook will stop working soon. Actually, it already did.'), list), read);
+    },
+  },
+
+  // ---------------------------------------------------------------- Calculator (needs an update first)
+  calc: {
+    name: 'Calculator', size: [320, 470],
+    open(w, arg, os) {
+      w.body.classList.add('center');
+      if (!os.calcUpdated) {
+        w.body.append(h('div.win-teams', {}, h('h3', {}, 'This app needs an update'), h('p', {}, 'Calculator 11.2412.0 is required to add numbers. Download size: 412 MB.'), h('button.primary', { onclick: async (e) => {
+          e.target.disabled = true;
+          for (const t of ['Pending…', 'Downloading 3%', 'Downloading 3%', 'Installing…']) { e.target.textContent = t; await sleep(700); }
+          os.calcUpdated = true; os.closeWin(w); os.launch('calc');
+        } }, 'Update')));
+        return;
+      }
+      let expr = '';
+      const disp = h('div.win-calc-disp', {}, '0');
+      const set = (v) => { expr = v; disp.textContent = expr || '0'; };
+      const press = (k) => {
+        if (k === 'C') return set('');
+        if (k === '⌫') return set(expr.slice(0, -1));
+        if (k === '=') {
+          try {
+            const v = Function(`"use strict";return (${expr.replace(/×/g, '*').replace(/÷/g, '/')})`)();
+            set(String(Math.round(v * 1e10) / 1e10));
+            if (Math.random() < 0.4) os.toast({ app: 'Copilot', title: 'Want me to explain this result?', body: `I can write a 900-word essay on why ${expr || 0} is what it is.`, yes: 'Explain', no: 'No thanks' });
+          } catch { set('Error'); }
+          return;
+        }
+        set(expr + k);
+      };
+      const keys = ['C', '⌫', '÷', '×', '7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3', '=', '0', '.'];
+      w.body.classList.remove('center');
+      w.body.classList.add('win-calc');
+      w.body.append(disp, h('div.win-calc-keys', {}, keys.map((k) => h(`button${k === '=' ? '.eq' : ''}`, { onclick: () => press(k) }, k))));
+    },
+  },
+
+  // ---------------------------------------------------------------- Photos
+  photos: {
+    name: 'Photos', size: [800, 520], single: true,
+    open(w, arg, os) {
+      w.body.classList.add('scroll');
+      const mem = ['Blue screen #1', 'Blue screen #2', 'Working on updates 99%', 'Blue screen #3 (a classic)', '“Activate Windows”', 'Teams loading'];
+      w.body.append(h('div.win-ex-banner', {}, '☁️ Back up your photos with OneDrive. You have 0 photos and 4.98 GB of them.', h('button', { onclick: () => os.toast(NAGS[1]) }, 'Back up')),
+        h('h2.win-ph-h', {}, 'Memories · On this day'),
+        h('div.win-ph-grid', {}, mem.map((t, i) => h('div.win-ph', { style: { background: /Blue/.test(t) ? '#0078d7' : /updates/.test(t) ? '#0a2a5c' : /Teams/.test(t) ? '#5b5fc7' : '#222' } }, h('b', {}, /Blue/.test(t) ? ':(' : /updates/.test(t) ? '⟳' : /Teams/.test(t) ? '…' : '⚠'), h('span', {}, t)))),
+        h('p.win-ph-note', {}, 'Photos found 6 faces. 6 of them are error screens.'));
+    },
+  },
+
+  // ---------------------------------------------------------------- Printers
+  printers: {
+    name: 'Print queue', size: [620, 420], single: true,
+    open(w, arg, os) {
+      w.body.classList.add('scroll');
+      const docs = Array.from({ length: 47 }, (_, i) => [`${['Program.cs', 'Untitled.txt', 'Boarding pass (URGENT).pdf', 'test page'][i % 4]}`, i === 0 ? 'Error - Printing' : 'Paused']);
+      const table = h('table.win-tm', {}, h('tr', {}, h('th', {}, 'Document'), h('th', {}, 'Status'), h('th', {}, 'Owner')), docs.map(([d, st]) => h('tr', {}, h('td', {}, d), h('td', { style: { color: /Error/.test(st) ? '#c42b1c' : '' } }, st), h('td', {}, 'Kuma'))));
+      w.body.append(h('div.win-tm-head', {}, '🖨 HP DeskJet 2700 series — ', h('b', { style: { color: '#c42b1c' } }, 'Offline'), ' · 47 documents · Kuma doesn’t own a printer'),
+        h('div.win-upd-btns', { style: { padding: '8px 12px', maxWidth: '420px' } },
+          h('button', { onclick: (e) => { e.target.textContent = 'Deleting…'; setTimeout(() => { e.target.textContent = 'Deleting… (still)'; }, 2500); } }, 'Cancel all'),
+          h('button', { onclick: () => os.dialog('Troubleshooter', 'Detecting problems… \n\nTroubleshooting couldn’t identify the problem. The problem might be the printer. Or the troubleshooter.', ['Close', 'Explore additional options']) }, 'Troubleshoot'),
+          h('button', { onclick: () => os.dialog('HP Smart', 'To print, install HP Smart, create an HP account, and subscribe to HP Instant Ink. Your printer will now refuse non-HP ink.', ['Install', 'Cancel']) }, 'Print test page')),
+        table);
+    },
+  },
+
+  // ---------------------------------------------------------------- Registry Editor
+  regedit: {
+    name: 'Registry Editor', size: [760, 460],
+    open(w, arg, os) {
+      w.body.classList.add('row');
+      const KEYS = {
+        'HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsCopilot': [['TurnOffWindowsCopilot', 'REG_DWORD', '0x00000001 (ignored since 24H2)']],
+        'HKEY_CURRENT_USER\\Software\\Microsoft\\Edge': [['IsDefaultBrowser', 'REG_DWORD', '0x00000001 (enforced)'], ['TimesUserSaidNo', 'REG_DWORD', '0x000003E7 (999)']],
+        'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\WindowsUpdate': [['ActiveHoursStart', 'REG_SZ', 'never'], ['ActiveHoursEnd', 'REG_SZ', 'never'], ['RespectUser', 'REG_DWORD', '0x00000000']],
+        'HKEY_CURRENT_USER\\Software\\Kuma': [['Sanity', 'REG_DWORD', '0x00000003 (decreasing)'], ['DreamOS', 'REG_SZ', 'macOS']],
+        'HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Recall': [['Enabled', 'REG_DWORD', '0x00000001'], ['CanBeDisabled', 'REG_DWORD', '0x00000000']],
+      };
+      const tree = h('div.win-reg-tree');
+      const vals = h('div.win-reg-vals');
+      const show = (k) => {
+        vals.innerHTML = '';
+        vals.append(h('div.win-ex-addr', {}, `Computer\\${k}`), h('table.win-tm', {}, h('tr', {}, h('th', {}, 'Name'), h('th', {}, 'Type'), h('th', {}, 'Data')),
+          KEYS[k].map(([n, t, d]) => h('tr', { ondblclick: () => os.dialog('Error Editing Value', `Cannot edit ${n}: Error writing the value’s new contents.\n\nYou need permission from TrustedInstaller to make changes to this value.`, ['OK']) }, h('td', {}, `ab ${n}`), h('td', {}, t), h('td', {}, d)))));
+      };
+      Object.keys(KEYS).forEach((k) => tree.append(h('button', { onclick: () => show(k) }, `📁 ${k.split('\\').slice(-1)[0]}`, h('small', {}, k.split('\\')[0]))));
+      w.body.append(tree, vals);
+      show(Object.keys(KEYS)[0]);
+      os.dialog('User Account Control', 'Do you want to allow this app to make changes to your device?\n\nRegistry Editor\nVerified publisher: Microsoft Windows\n\n(It won’t be allowed to make changes anyway.)', ['Yes', 'No']);
+    },
+  },
+
+  // ---------------------------------------------------------------- PC Health Check
+  health: {
+    name: 'PC Health Check', size: [600, 470], single: true,
+    open(w, arg, os) {
+      w.body.classList.add('scroll');
+      const out = h('div.win-health-out');
+      w.body.append(h('div.win-health', {}, h('h2', {}, 'PC health at a glance'), h('div.win-card', {}, h('b', {}, 'Introducing Windows 11'), h('p', {}, 'Let’s check if this PC meets the system requirements.'), h('button.primary', { onclick: async (e) => {
+        e.target.disabled = true; e.target.textContent = 'Checking…';
+        await sleep(1800);
+        e.target.textContent = 'Check again';
+        e.target.disabled = false;
+        out.innerHTML = '';
+        out.append(h('div.win-banner.red', {}, 'This PC doesn’t currently meet Windows 11 system requirements.'), h('p', {}, '(It is currently running Windows 11.)'),
+          ...[['❌', 'TPM 2.0 must be supported and enabled on this PC.', 'TPM: “Kuma Trusted Platform” (not trusted)'], ['❌', 'The processor isn’t currently supported for Windows 11.', 'Processor: Kuma Neural Core 9 (too new)'],
+            ['⚠️', 'This PC must support Secure Boot.', 'Secure Boot: securely booting… 43 times today'], ['✅', 'There is at least 4 GB of system memory (RAM).', 'Edge is using all 32 GB of it']].map(([i, t, d]) => h('div.win-card', {}, h('b', {}, `${i} ${t}`), h('p', {}, d))));
+      } }, 'Check now')), out, h('div.win-card', {}, h('b', {}, 'Storage capacity'), h('p', {}, '99% full. Windows.old (28.4 GB) is load-bearing.'), h('button', { onclick: () => os.launch('cleanup') }, 'Manage storage'))));
+    },
+  },
+
+  // ---------------------------------------------------------------- Disk Cleanup
+  cleanup: {
+    name: 'Disk Cleanup', size: [440, 440],
+    open(w, arg, os) {
+      w.body.classList.add('legacy');
+      const box = h('div.win-cp7');
+      w.body.append(box);
+      (async () => {
+        const p = h('div.win-ex-drive', {}, '🧹', h('div', {}, h('b', {}, 'Disk Cleanup is calculating how much space you can free on (C:).'), h('div.bar', {}, h('i', { style: { width: '0%', background: '#06b025' } }))));
+        box.append(p);
+        for (let i = 0; i <= 100; i += 4) { p.querySelector('i').style.width = `${i}%`; await sleep(90 + (i > 80 ? 260 : 0)); if (!w.el.isConnected) return; }
+        box.innerHTML = '';
+        const items = [['Windows Update Cleanup', '0 bytes', true], ['Previous Windows installation(s)', '28.4 GB', false], ['Temporary Internet Files (Edge)', '0 bytes (Edge keeps them)', true], ['Delivery Optimization Files', '3.9 GB (shared with strangers)', false], ['Recycle Bin', '6 items (unrestorable)', true], ['Thumbnails', '12 KB', true]];
+        box.append(h('p', {}, 'You can use Disk Cleanup to free up to 0 bytes of disk space on (C:).'),
+          ...items.map(([n, sz, ok]) => h('label.win-dc-row', {}, h('input', { type: 'checkbox', checked: ok, disabled: !ok }), h('span', {}, n), h('small', {}, sz))),
+          h('button.primary', { onclick: async (e) => { e.target.textContent = 'Cleaning…'; await sleep(2500); os.dialog('Disk Cleanup', 'Disk Cleanup freed 0 bytes. Windows also downloaded a 4.1 GB update while you waited.', ['OK']); e.target.textContent = 'OK'; } }, 'OK'));
+      })();
+    },
+  },
+
+  // ---------------------------------------------------------------- Windows Security
+  security: {
+    name: 'Windows Security', size: [680, 480], single: true,
+    open(w, arg, os) {
+      w.body.classList.add('scroll');
+      const threat = h('div.win-card', {}, h('b', {}, '⚠️ Threat found: Trojan:Win32/RobotSentience.A'), h('p', {}, 'Affected item: C:\\Users\\Kuma\\OneDrive\\Documents\\agent\\Program.cs\nAlert level: Severe · Status: Quarantined'),
+        h('div.win-upd-btns', {}, h('button', { onclick: () => {
+          let n = 0;
+          const ask = () => os.dialog('Allow on device?', ['Are you sure? This file contains code written by a robot.', 'Really sure? It mentions Linux in a comment.', 'Last chance. We’re just looking out for you.'][n], ['Allow', 'Cancel'], (b) => {
+            if (b !== 'Allow') return;
+            if (++n < 3) ask(); else os.dialog('Windows Security', 'Program.cs was restored. It has been quarantined again by a scheduled scan.', ['OK']);
+          });
+          ask();
+        } }, 'Allow on device'), h('button', {}, 'Remove')));
+      w.body.append(h('div.win-health', {}, h('h2', {}, '🛡 Security at a glance'),
+        h('div.win-banner', {}, 'Your device is being protected. From you, mostly.'),
+        threat,
+        ...[['✅ Virus & threat protection', 'Last scan: 4 minutes ago (Antimalware Service Executable, 97% CPU)'], ['⚠️ Account protection', 'Sign in with a Microsoft account for better protection.'], ['✅ Firewall & network protection', 'Blocking: Chrome installer, Steam, the printer'], ['⚠️ Device security', 'Core isolation is off. Memory integrity is off. Kuma’s patience is off.']].map(([t, d]) => h('div.win-card', {}, h('b', {}, t), h('p', {}, d)))));
+    },
+  },
+
+  // ---------------------------------------------------------------- Xbox
+  xbox: {
+    name: 'Xbox', size: [760, 480],
+    open(w, arg, os) {
+      w.body.classList.add('center');
+      w.body.style.background = 'radial-gradient(circle at 50% 30%, #1f7a1f, #0b2e0b)';
+      w.body.append(h('div.win-teams', { style: { color: '#fff' } }, h('h2', {}, '🎮 Xbox'), h('p', {}, 'Sign in to play. Signing in requires the Xbox app, the Xbox Identity Provider, the Gaming Services app, and an update to all three.'),
+        h('button.primary', { onclick: () => os.dialog('Xbox', 'Gaming Services needs to be repaired. Error 0x80073D26. Try reinstalling it from the Microsoft Store (error 0x80070005).', ['Open Store', 'Cancel'], (b, i) => { if (!i) os.launch('store'); }) }, 'Sign in'),
+        h('small', {}, 'Game Pass Ultimate: first month $1. Then $19.99. Then we raise it.')));
     },
   },
 

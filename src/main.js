@@ -56,8 +56,8 @@ async function boot() {
   const winpc = new WinPC();
   if (house.winScreen) { house.winScreen.mat.map = winpc.texture; house.winScreen.mat.color.setScalar(1); house.winScreen.mat.needsUpdate = true; }
   const kuma = new Kuma(world.scene, layout, { say: hud.kumaSay });
-  winpc.on((e) => {
-    kuma.react(e);
+  winpc.on((e, data) => {
+    kuma.react(e, data);
     if (e === 'bsod' || e === 'popup') audio.winError();
   });
   kuma.onSlam = () => audio.thud();

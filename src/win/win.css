@@ -231,3 +231,86 @@
 #win .win-candy-board { display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; width: 100%; max-width: 400px; aspect-ratio: 1; background: rgba(0, 0, 0, 0.2); border-radius: 10px; padding: 6px; }
 #win .win-candy-board button { border: 0; background: rgba(255, 255, 255, 0.15); border-radius: 6px; font-size: 24px; display: grid; place-items: center; }
 #win .win-candy-board button:hover { background: rgba(255, 255, 255, 0.35); transform: scale(1.06); }
+
+/* lock screen */
+#win .win-lock { position: absolute; inset: 0; z-index: 9400; color: #fff; display: flex; flex-direction: column; align-items: center; padding-top: 12vh; cursor: default;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.45)), radial-gradient(ellipse at 30% 80%, #f6a35b, transparent 50%), linear-gradient(160deg, #2a5f8f, #f2c38b 70%, #3b6e4a); transition: opacity 0.4s, transform 0.4s; }
+#win .win-lock.out { opacity: 0; transform: translateY(-40px); }
+#win .win-lock-time { font-size: 96px; font-weight: 600; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.3); }
+#win .win-lock-date { font-size: 22px; }
+#win .win-lock-spot { position: absolute; right: 24px; top: 24px; max-width: 280px; font-size: 12px; background: rgba(0, 0, 0, 0.35); padding: 8px 12px; border-radius: 8px; }
+#win .win-lock-hint { position: absolute; bottom: 70px; opacity: 0.8; }
+#win .win-lock-card { margin-top: 8vh; display: flex; flex-direction: column; align-items: center; gap: 10px; background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(20px); padding: 28px 36px; border-radius: 12px; max-width: 340px; text-align: center; }
+#win .win-lock-avatar { width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center; font: 700 40px var(--wfont); font-style: normal; background: linear-gradient(135deg, #ff6b5e, #c8302a); }
+#win .win-lock-card input { width: 220px; padding: 8px 12px; border-radius: 4px; border: 0; border-bottom: 2px solid var(--waccent); font: inherit; outline: 0; }
+#win .win-lock-card p { min-height: 1.4em; margin: 0; font-size: 12px; }
+#win .win-lock-card .link { color: #fff; }
+#win .win-lock-card small { opacity: 0.6; }
+
+/* all apps */
+#win .win-start-all { max-height: 330px; overflow: auto; display: flex; flex-direction: column; }
+#win .win-start-letter { font-weight: 600; color: var(--waccent); padding: 8px 10px 2px; }
+
+/* recall */
+#win .win-recall-head { display: flex; gap: 12px; align-items: center; padding: 12px 16px; background: #f4f0ff; }
+#win .win-recall-head input { flex: 1; padding: 7px 12px; border-radius: 99px; border: 1px solid #d8ccff; outline: 0; font: inherit; }
+#win .win-recall-head button { border: 0; background: #e8e0ff; color: #5b2bd6; border-radius: 99px; padding: 6px 12px; }
+#win .win-recall-timeline { display: flex; align-items: center; gap: 10px; padding: 6px 16px; color: #666; font-size: 12px; }
+#win .win-recall-timeline i { flex: 1; height: 6px; border-radius: 3px; background: repeating-linear-gradient(90deg, #a78bfa 0 6px, #ede9fe 6px 9px); }
+#win .win-recall-grid { flex: 1; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; padding: 10px 16px 16px; }
+#win .win-recall-snap { border: 1px solid #e5e5e5; background: #fff; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 3px; text-align: left; }
+#win .win-recall-snap:hover { border-color: #a78bfa; }
+#win .win-recall-img { height: 90px; border-radius: 5px; display: grid; place-items: center; font-size: 13px; padding: 6px; text-align: center; }
+
+/* paint */
+#win .win-paint-bar { display: flex; gap: 6px; align-items: center; padding: 6px 8px; background: #f3f3f3; border-bottom: 1px solid #e5e5e5; flex-wrap: wrap; }
+#win .win-paint-bar button:not(.win-swatch) { border: 1px solid #ddd; background: #fff; border-radius: 4px; padding: 3px 8px; font-size: 12px; }
+#win .win-swatch { width: 20px; height: 20px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.25); }
+#win .win-paint-cv { flex: 1; min-height: 0; width: 100%; background: #fff; cursor: crosshair; touch-action: none; }
+
+/* get help */
+#win .win-help-opts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+#win .win-help-opts button { border: 1px solid #c7d7f0; background: #f2f7ff; border-radius: 99px; padding: 4px 10px; font-size: 12px; }
+
+/* outlook */
+#win .win-ol-nav { width: 180px; background: #f3f6fb; padding: 10px; flex: none; display: flex; flex-direction: column; gap: 2px; }
+#win .win-ol-toggle { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; margin-bottom: 10px; }
+#win .win-ol-toggle i { width: 30px; height: 16px; border-radius: 99px; background: var(--waccent); position: relative; }
+#win .win-ol-toggle i::after { content: ''; position: absolute; right: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+#win .win-ol-toggle small { flex-basis: 100%; color: #888; }
+#win .win-ol-folder { padding: 6px 8px; border-radius: 4px; }
+#win .win-ol-folder:first-of-type { background: #dde8f7; }
+#win .win-ol-main { width: 300px; flex: none; overflow: auto; border-right: 1px solid #e5e5e5; padding: 8px; }
+#win .win-ol-item { display: flex; flex-direction: column; width: 100%; text-align: left; border: 0; border-bottom: 1px solid #eee; background: none; padding: 8px; }
+#win .win-ol-item.ad { background: #fffbea; }
+#win .win-ol-item span { color: #555; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#win .win-ol-read { flex: 1; padding: 16px 20px; overflow: auto; }
+
+/* calculator */
+#win .win-body.win-calc { background: #202020; color: #fff; display: flex; flex-direction: column; padding: 8px; gap: 8px; }
+#win .win-calc-disp { font-size: 42px; text-align: right; padding: 20px 10px 6px; overflow: hidden; white-space: nowrap; }
+#win .win-calc-keys { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+#win .win-calc-keys button { border: 0; border-radius: 4px; background: #3b3b3b; color: #fff; font-size: 18px; }
+#win .win-calc-keys button:hover { background: #4a4a4a; }
+#win .win-calc-keys button.eq { background: #4cc2ff; color: #000; grid-row: span 2; }
+
+/* photos */
+#win .win-ph-h { padding: 0 16px; font-weight: 600; }
+#win .win-ph-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 16px; }
+#win .win-ph { height: 120px; border-radius: 6px; color: #fff; display: flex; flex-direction: column; justify-content: space-between; padding: 10px; }
+#win .win-ph b { font-size: 34px; }
+#win .win-ph-note { padding: 10px 16px; color: #666; }
+
+/* registry */
+#win .win-reg-tree { width: 230px; flex: none; overflow: auto; background: #fff; border-right: 1px solid #ddd; display: flex; flex-direction: column; padding: 6px; }
+#win .win-reg-tree button { border: 0; background: none; text-align: left; padding: 5px 6px; display: flex; flex-direction: column; }
+#win .win-reg-tree button:hover { background: #e5f3ff; }
+#win .win-reg-tree small { color: #888; font-size: 10.5px; }
+#win .win-reg-vals { flex: 1; overflow: auto; }
+
+/* health / security / cleanup */
+#win .win-health { padding: 6px 22px 22px; }
+#win .win-card p { white-space: pre-line; }
+#win .win-dc-row { display: flex; gap: 8px; align-items: center; padding: 4px 0; font-size: 13px; color: #222; }
+#win .win-dc-row small { margin-left: auto; color: #666; }
+#win .win-tb-extra { display: flex; gap: 2px; }

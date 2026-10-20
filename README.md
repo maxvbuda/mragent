@@ -82,6 +82,22 @@ Click the monitor for the full Windows 11 parody:
 - a Store that throws error 0x80070005
 - Teams that never loads, plus Copilot, Command Prompt, Task Manager, Notepad with "✨ Rewrite", and Candy Crush
 - Updates and blue screens that close your windows
+- Recall, which saves "snapshots" of everything, including your password, and can't really be turned off
+- Paint whose AI features cost credits you don't have
+- Get Help, which loops back to "have you tried restarting?"
+- the new Outlook with ads in the inbox and no way back
+- a Calculator that needs a 412 MB update before it adds numbers
+- Photos whose "memories" are blue screens
+- a print queue of 47 documents for a printer Kuma doesn't own
+- Registry Editor values that TrustedInstaller won't let you change
+- PC Health Check saying the PC can't run Windows 11 while it's running Windows 11
+- Disk Cleanup that frees 0 bytes
+- Windows Security quarantining Kuma's own code
+- Xbox sign-in errors
+- deleted Edge shortcuts that come back, and Candy Crush reinstalling itself after updates
+- a lock screen whose PIN only works on the third try
+- an "All apps" list
+- more pop-ups, each with its own reaction from Kuma
 
 ## On his Mac
 

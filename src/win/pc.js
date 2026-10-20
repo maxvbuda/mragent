@@ -17,6 +17,14 @@ export const NAGS = [
   { app: 'Windows Update', title: 'Restart required', body: 'Your device will restart outside of active hours. Active hours: never.', yes: 'Restart now', no: 'Pick a time' },
   { app: 'Microsoft 365', title: 'Your free trial is waiting', body: 'Get Word, Excel, PowerPoint and 1 TB of cloud storage for just $99.99/year.', yes: 'Try free for 1 month', no: 'Not now' },
   { app: 'Windows Security', title: 'Virus & threat protection', body: 'No action needed. We just wanted to say hi. 👋', yes: 'OK', no: 'Dismiss' },
+  { app: 'Windows Security', title: 'Threat quarantined', body: 'Trojan:Win32/RobotSentience.A was found in Program.cs. Your code has been removed for your safety.', yes: 'See details', no: 'Dismiss' },
+  { app: 'Printers', title: 'Printer offline', body: 'HP DeskJet 2700 is offline. You don’t own an HP DeskJet 2700. 47 documents are waiting.', yes: 'Open queue', no: 'Dismiss' },
+  { app: 'Recall', title: 'Recall saved a moment', body: 'You looked frustrated at 10:42. We saved it, so you can relive it.', yes: 'Relive it', no: 'Please don’t' },
+  { app: 'PC Health Check', title: 'Your PC isn’t eligible for Windows 11', body: 'Upgrade to Windows 11 today! (You are on Windows 11.)', yes: 'Check now', no: 'Later' },
+  { app: 'Outlook', title: 'Try the new Outlook', body: 'The new Outlook is here. You’ve already been switched. There is no old Outlook.', yes: 'Open Outlook', no: 'OK' },
+  { app: 'USB', title: 'USB device not recognized', body: 'The last USB device you connected to this computer malfunctioned. You haven’t connected anything.', yes: 'Troubleshoot', no: 'Ignore' },
+  { app: 'Xbox', title: 'Kuma, your Game Pass trial ends soon', body: 'You signed up for this trial in 2019 by pressing a key. Renew now for $19.99/month.', yes: 'Renew', no: 'Cancel (requires phone call)' },
+  { app: 'Windows', title: 'Get even more out of Windows', body: 'Finish setting up your device. You finished setting it up yesterday. And the day before.', yes: 'Continue', no: 'Remind me in 3 days' },
   { app: 'Bing', title: 'Make Bing your default search?', body: 'Get rewards points every time you search for “how to change default search engine”.', yes: 'Yes, make Bing default', no: 'Keep Bing anyway' },
 ];
 const STOP_CODES = ['IRQL_NOT_LESS_OR_EQUAL', 'CRITICAL_PROCESS_DIED', 'SYSTEM_SERVICE_EXCEPTION', 'KMODE_EXCEPTION_NOT_HANDLED', 'PAGE_FAULT_IN_NONPAGED_AREA', 'DPC_WATCHDOG_VIOLATION', 'KUMA_TYPED_TOO_FAST'];
