@@ -1,0 +1,20 @@
+{
+  "name": "mr-agent",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Mr. Agent: a FreeCAD-modelled robot that codes at its desk, wanders its room, and lets you use its Mac.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "start": "vite --open",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "html-to-image": "^1.11.13",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "vite": "^8.3.4"
+  }
+}

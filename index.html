@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Mr. Agent</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cellipse cx='32' cy='30' rx='24' ry='22' fill='%23f3f5f9'/%3E%3Crect x='14' y='22' width='36' height='16' rx='8' fill='%23050608'/%3E%3Ccircle cx='25' cy='30' r='3.5' fill='%2349e3ff'/%3E%3Ccircle cx='39' cy='30' r='3.5' fill='%2349e3ff'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <div id="stage"></div>
+
+    <header class="hud card" id="status">
+      <div class="who">
+        <span class="dot"></span>
+        <div>
+          <h1>Mr. Agent</h1>
+          <p id="activity">Booting…</p>
+        </div>
+      </div>
+      <dl class="stats">
+        <div><dt>Lines today</dt><dd id="st-lines">0</dd></div>
+        <div><dt>Commits</dt><dd id="st-commits">0</dd></div>
+        <div><dt>Coffees</dt><dd id="st-coffee">0</dd></div>
+      </dl>
+      <div id="energy" data-level="ok" title="Battery: coffee recharges it"><i></i></div>
+    </header>
+
+    <nav class="hud card" id="controls" aria-label="Controls">
+      <button data-act="mac" class="primary" title="Use the Mac (M)"><span class="ico">💻</span><span class="lbl">Use the Mac</span><kbd>M</kbd></button>
+      <span class="sep"></span>
+      <button data-act="coffee" title="Coffee run (C)"><span class="ico">☕</span><span class="lbl">Coffee</span><kbd>C</kbd></button>
+      <button data-act="stretch" title="Stretch (S)"><span class="ico">🙆</span><span class="lbl">Stretch</span><kbd>S</kbd></button>
+      <button data-act="window" title="Look out the window (W)"><span class="ico">🪟</span><span class="lbl">Window</span><kbd>W</kbd></button>
+      <button data-act="dance" title="Dance break (D)"><span class="ico">🎶</span><span class="lbl">Dance</span><kbd>D</kbd></button>
+      <button data-act="wave" title="Say hi (H)"><span class="ico">👋</span><span class="lbl">Wave</span><kbd>H</kbd></button>
+      <span class="sep"></span>
+      <button data-act="time" id="btn-time" title="Time of day (T)"><span class="ico">🕒</span><span class="lbl">Real time</span><kbd>T</kbd></button>
+      <button data-act="follow" id="btn-follow" title="Follow the robot (F)"><span class="ico">🎥</span><span class="lbl">Follow</span><kbd>F</kbd></button>
+      <button data-act="reset" title="Reset view (R)"><span class="ico">↺</span><span class="lbl">View</span><kbd>R</kbd></button>
+      <button data-act="sound" id="btn-sound" title="Sound (V)"><span class="ico">🔊</span><span class="lbl">Sound</span><kbd>V</kbd></button>
+    </nav>
+
+    <div id="bubble" class="hud"></div>
+    <div id="tip"></div>
+    <div id="toast" class="hud"></div>
+    <p class="hud" id="hint">Drag to orbit · scroll to zoom · click the robot or his MacBook</p>
+
+    <div id="mac" hidden></div>
+
+    <div id="loader">
+      <div class="logo"></div>
+      <div class="bar"><i></i></div>
+      <p class="msg">Loading parts from FreeCAD…</p>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
