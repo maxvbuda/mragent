@@ -325,7 +325,7 @@ async function boot() {
     audio.unlock();
     addMsg('me', text);
     if (brain.broken) { addMsg('bot', '*bzzt* … (he’s broken — press Repair)'); return; }
-    const pending = addMsg('bot typing', mind.status === 'ready' ? 'Qwen is thinking…' : 'thinking…');
+    const pending = addMsg('bot typing', mind.status === 'ready' ? 'MrAgent is thinking…' : 'thinking…');
     robot.face.set('thinking', 8);
     if (mind.status === 'ready') hud.say('🤔 …', 20);
     const p = robot.root.position;
@@ -338,7 +338,7 @@ async function boot() {
     robot.face.set(d.mood && d.mood !== 'normal' ? d.mood : 'happy', 2);
     const cmd = toCommand(d);
     const acting = d.action !== 'chat' && cmd;
-    addMsg('bot', d.reply, `${d.source === 'qwen' ? 'Qwen3-1.7B' : 'rules'}${acting ? ` · ${d.action.replace(/_/g, ' ')}${d.place && d.place !== 'none' ? ` → ${d.place.replace(/_/g, ' ')}` : ''}` : ''}`);
+    addMsg('bot', d.reply, `${d.source === 'qwen' ? 'MrAgent AI' : 'quick reply'}${acting ? ` · ${d.action.replace(/_/g, ' ')}${d.place && d.place !== 'none' ? ` → ${d.place.replace(/_/g, ' ')}` : ''}` : ''}`);
     if (acting) {
       brain.command(cmd);
       if (cmd.type === 'drive') { brain.driving = true; followRobot = true; autoFollow = true; $('#btn-follow').classList.add('on'); }
@@ -348,11 +348,11 @@ async function boot() {
   mind.onChange((m) => {
     const box = $('#chat-brain');
     box.classList.toggle('ready', m.status === 'ready');
-    $('#chat-model').textContent = { idle: '🧠 Rule-based brain (Qwen not loaded)', loading: `🧠 Loading Qwen3-1.7B… ${Math.round(m.progress * 100)}%`, ready: '🧠 Qwen3-1.7B · running locally on WebGPU', unsupported: '🧠 Rule-based brain (no WebGPU here)', error: '🧠 Rule-based brain (Qwen failed to start)' }[m.status];
+    $('#chat-model').textContent = { idle: '🧠 MrAgent (basic mode)', loading: `🧠 Waking up MrAgent… ${Math.round(m.progress * 100)}%`, ready: '🧠 MrAgent · running on your device', unsupported: '🧠 MrAgent (basic mode — no WebGPU here)', error: '🧠 MrAgent (basic mode)' }[m.status];
     $('#chat-load').hidden = m.status !== 'idle' && m.status !== 'error';
     $('#chat-bar').hidden = m.status !== 'loading';
     $('#chat-bar i').style.width = `${Math.round(m.progress * 100)}%`;
-    box.title = m.text;
+    box.title = m.status === 'loading' ? 'Downloading MrAgent’s brain (about 1 GB, cached after the first time)' : m.status === 'ready' ? 'MrAgent runs entirely in your browser' : '';
   });
   $('#chat-load').addEventListener('click', () => mind.load());
   // fetch the model in the background shortly after start (it's cached by the browser after the first time)

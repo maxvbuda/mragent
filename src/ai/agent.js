@@ -28,7 +28,8 @@ reply: one short in-character sentence.
 action: "chat" for talk/questions; "goto" to walk to a place; or matcha, stretch, watch_tv, raid_fridge, tinker, nap, dance, wave, spin, jump, come_here, go_to_desk, look_at_me, visit_kuma, drive_me (user steers you with WASD).
 place: for goto only (rooms: office, kitchen, living_room, hallway, bedroom, bathroom, workshop; spots: desk, matcha_machine, window, bookshelf, plant, sofa, fridge, dining_table, workbench, 3d_printer, parts_shelf, mirror, bed, front_door, living_room_window, kuma), else "none".
 mood: usually happy or normal; annoyed only if the user is rude or just punched you.
-Refuse rude, harmful or impossible requests (leaving the house, hurting Kuma, deleting code) with action "chat".`;
+Refuse rude, harmful or impossible requests (leaving the house, hurting Kuma, deleting code) with action "chat".
+Your mind is called MrAgent. If asked what AI you are or who made you, answer in your own words, e.g. "I'm MrAgent — built in FreeCAD, powered by matcha."`;
 
 /** Turn a parsed decision into a robot command (shared by Qwen and the fallback). */
 export function toCommand(d) {
@@ -99,7 +100,7 @@ export function ruleBased(text, ctx) {
     if (/how are you|how's it going/.test(t)) return { reply: ctx.integrity < 1 ? 'Honestly? Bit dented.' : 'Great! Compiling happily.', action: 'chat', place: 'none', mood: 'happy' };
     if (/what are you doing|what's up/.test(t)) return { reply: `Right now: ${ctx.activity.toLowerCase()}.`, action: 'chat', place: 'none', mood: 'normal' };
     if (/who are you|your name/.test(t)) return { reply: 'I’m Mr. Agent. I write code, walk around, and drink matcha I can’t taste.', action: 'chat', place: 'none', mood: 'happy' };
-    return { reply: pick(['Good question. I’d ask Qwen, but my big brain is still downloading.', 'Hmm, let me think about that… later.', 'I have no idea, but I’m confident about it.']), action: 'chat', place: 'none', mood: 'thinking' };
+    return { reply: pick(['Good question. My big brain is still waking up — ask me again in a minute.', 'Hmm, let me think about that… later.', 'I have no idea, but I’m confident about it.']), action: 'chat', place: 'none', mood: 'thinking' };
   }
   return { reply: pick(['Hmm? Try asking me to go somewhere, make matcha, dance or watch TV.', 'Beep? I didn’t quite get that.', 'Noted. Probably.']), action: 'chat', place: 'none', mood: 'thinking' };
 }
@@ -123,7 +124,7 @@ export class AgentMind {
 
   async load() {
     if (this.status === 'loading' || this.status === 'ready') return;
-    if (!this.supported) { this.status = 'unsupported'; this.text = 'WebGPU isn’t available in this browser, so Qwen can’t run. Using the rule-based brain.'; this.emit(); return; }
+    if (!this.supported) { this.status = 'unsupported'; this.text = 'WebGPU isn’t available in this browser, so MrAgent is running in basic mode.'; this.emit(); return; }
     this.status = 'loading';
     this.text = 'Starting…';
     this.emit();
@@ -140,12 +141,12 @@ export class AgentMind {
       this.emit();
       try { await this.engine.chat.completions.create({ messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: 'hi' }], max_tokens: 24, response_format: { type: 'json_object', schema: JSON.stringify(SCHEMA) }, extra_body: { enable_thinking: false } }); } catch { /* fine */ }
       this.status = 'ready';
-      this.text = 'Qwen3-1.7B running locally on your GPU';
+      this.text = 'MrAgent running locally on your device';
       this.emit();
     } catch (e) {
       console.error(e);
       this.status = 'error';
-      this.text = `Couldn’t start Qwen (${e.message || e}). Using the rule-based brain.`;
+      this.text = `Couldn’t start MrAgent’s full brain (${e.message || e}). Using basic mode.`;
       this.emit();
     }
   }
@@ -167,7 +168,7 @@ export class AgentMind {
       const raw = res.choices[0].message.content || '{}';
       const d = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
       if (!ACTIONS.includes(d.action)) d.action = 'chat';
-      d.reply = String(d.reply || '…').slice(0, 220);
+      d.reply = String(d.reply || '…').replace(/qwen[\w.-]*|alibaba( cloud)?|tongyi/gi, 'MrAgent').slice(0, 220);
       this.history.push({ role: 'user', content: text }, { role: 'assistant', content: JSON.stringify(d) });
       return { ...d, source: 'qwen' };
     } catch (e) {
