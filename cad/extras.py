@@ -112,3 +112,34 @@ for it in house["furniture"][-3:]:
     house["obstacles"].append(footprint(it))
 house["spots"]["kuma"] = spot(5.95, 1.75, PI / 2 - 0.35)
 layout["kuma"] = {"chair": [5.0, 0, DESK_Z - 0.56], "seat": 0.4}
+
+# ======================================================================= HIS BRAIN (head frame, visible in x-ray mode)
+BRAIN_C = (0, -22, 168)
+hemis = [ellipsoid(50, 68, 50, (sx * 27, BRAIN_C[1], BRAIN_C[2])) for sx in (1, -1)]
+parts["brainLobes"] = comp(*hemis)
+folds = []
+for sx in (1, -1):
+    cx = sx * 27
+    for k, lat in enumerate((-0.55, -0.15, 0.25, 0.6)):
+        pts = []
+        for i in range(19):
+            a = math.pi * 2 * i / 18
+            r = math.cos(lat * math.pi / 2) * 1.03
+            wob = 1 + 0.06 * math.sin(a * 5 + k)
+            pts.append((cx + sx * 50 * r * abs(math.cos(a)) * 0.55 * wob, BRAIN_C[1] + 68 * r * math.sin(a) * wob,
+                        BRAIN_C[2] + 50 * math.sin(lat * math.pi / 2) * 1.03 + 6 * math.sin(a * 3 + k)))
+        clean = [pts[0]]
+        for q in pts[1:]:
+            if math.dist(q, clean[-1]) > 1.0:
+                clean.append(q)
+        folds.append(tube(clean, 3.2))
+parts["brainFolds"] = comp(*folds)
+parts["brainStem"] = comp(cyl(15, 50, (0, -34, 82)), sphere(18, (0, -34, 132)))
+rngb = random.Random(3)
+nodes = []
+for i in range(26):
+    sx = 1 if i % 2 else -1
+    a, b = rngb.uniform(0, math.pi * 2), rngb.uniform(-1.1, 1.1)
+    nodes.append(sphere(4.5, (sx * 27 + sx * 52 * abs(math.cos(b) * math.cos(a)), BRAIN_C[1] + 70 * math.cos(b) * math.sin(a), BRAIN_C[2] + 52 * math.sin(b))))
+parts["brainNodes"] = comp(*nodes)
+layout["brain"] = {"centre": T(BRAIN_C[0], BRAIN_C[1], BRAIN_C[2])}

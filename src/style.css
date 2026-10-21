@@ -149,3 +149,26 @@ body.punching #stage canvas { cursor: crosshair; }
 #chat-tabs button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(20, 30, 50, 0.12); }
 #chat .chat-log .bot.kuma { background: #1b1d23; color: #fff; }
 #chat .chat-log .bot.kuma small { color: #9aa3b2; }
+
+/* inside his brain */
+#brainview { left: 16px; top: calc(max(16px, env(safe-area-inset-top)) + 196px); width: 320px; max-width: calc(100vw - 32px); max-height: calc(100vh - 300px); overflow-y: auto; padding: 0 14px 12px; }
+#brainview[hidden] { display: none; }
+#brainview header { display: flex; justify-content: space-between; align-items: center; padding: 12px 0 6px; position: sticky; top: 0; background: inherit; }
+#brainview header button { border: 0; background: none; cursor: pointer; color: var(--ink-2); }
+#brainview h4 { margin: 10px 0 5px; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); }
+.bv-vitals { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; font-size: 12px; }
+.bv-vitals span { color: var(--ink-2); }
+.bv-vitals b { font-weight: 600; }
+.bv-vitals .wide { grid-column: span 2; }
+.bv-thought { font: italic 13.5px/1.45 Georgia, 'Times New Roman', serif; padding: 10px 12px; border-radius: 12px; background: linear-gradient(135deg, rgba(255, 92, 138, 0.1), rgba(176, 107, 255, 0.12)); min-height: 44px; }
+.bv-thought.live::after { content: '▍'; animation: bvcaret 0.8s steps(2) infinite; color: #b06bff; font-style: normal; }
+@keyframes bvcaret { 50% { opacity: 0; } }
+.bv-dim { color: var(--ink-2); font-style: normal; font-family: var(--ui); font-size: 12px; }
+.bv-decision { font-size: 12px; margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+.bv-decision i { font-style: normal; background: rgba(22, 32, 44, 0.07); border-radius: 99px; padding: 2px 8px; }
+.bv-raw summary { font-size: 11.5px; color: var(--ink-2); cursor: pointer; margin-top: 8px; }
+.bv-raw pre { white-space: pre-wrap; word-break: break-word; font: 11px/1.4 var(--mono); background: rgba(22, 32, 44, 0.06); padding: 8px; border-radius: 8px; margin: 6px 0 0; }
+.bv-log { list-style: none; margin: 0; padding: 0; font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
+.bv-log li { display: flex; gap: 8px; }
+.bv-log time { color: var(--ink-2); font: 11px var(--mono); flex: none; padding-top: 1px; }
+@media (max-width: 720px) { #brainview { top: auto; bottom: 140px; max-height: 40vh; } }

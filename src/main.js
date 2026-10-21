@@ -39,9 +39,10 @@ async function boot() {
   const nav = new NavGrid(layout, { extra: house.wallObstacles });
 
   const hud = makeHud();
+  const memory = []; // what he remembers doing (shown in the brain view)
   const brain = new Brain({
     robot, room, house, nav, screen, layout, world,
-    hooks: { say: hud.say, activity: hud.activity, arrived: (t) => arrived(t) },
+    hooks: { say: hud.say, activity: (t) => { hud.activity(t); remember(t); }, arrived: (t) => arrived(t) },
   });
   function arrived(target) {
     if (target !== 'kuma') return;
@@ -67,7 +68,7 @@ async function boot() {
     scene: world.scene, robot, brain, audio, bounds: layout.house.bounds,
     hooks: {
       shake: (a) => { shake = Math.max(shake, a); },
-      onHit: (n, integrity) => { $('#integrity').hidden = false; $('#integrity b').style.width = `${Math.round(integrity * 100)}%`; recentPunches++; },
+      onHit: (n, integrity) => { remember(`🥊 Got punched (hit ${n}). Integrity ${Math.round(integrity * 100)}%.`); $('#integrity').hidden = false; $('#integrity b').style.width = `${Math.round(integrity * 100)}%`; recentPunches++; },
       onRepaired: () => { $('#integrity').hidden = true; },
       onBroken: () => { hud.toast('💥 Mr. Agent is broken — press Repair (U)'); kuma.say('WHAT DID YOU DO TO MR. AGENT?!'); kuma.setMood('shocked'); },
     },
@@ -245,6 +246,7 @@ async function boot() {
       hud.toast('🔧 Repairing…');
     },
     chat: () => toggleChat(true),
+    brain: () => toggleBrain(),
     walls: () => {
       const order = ['cutaway', 'down', 'up'];
       house.wallMode = order[(order.indexOf(house.wallMode) + 1) % order.length];
@@ -262,7 +264,7 @@ async function boot() {
     actions[b.dataset.act]();
     e.currentTarget.blur();
   }));
-  const keymap = { m: 'mac', c: 'coffee', y: 'stretch', o: 'window', n: 'dance', h: 'wave', t: 'time', v: 'sound', r: 'reset', f: 'follow', g: 'tv', k: 'tinker', b: 'snack', z: 'sleep', x: 'walls', p: 'punch', u: 'repair' };
+  const keymap = { m: 'mac', c: 'coffee', y: 'stretch', o: 'window', n: 'dance', h: 'wave', t: 'time', v: 'sound', r: 'reset', f: 'follow', g: 'tv', k: 'tinker', b: 'snack', z: 'sleep', x: 'walls', p: 'punch', u: 'repair', i: 'brain' };
   const typing = (e) => /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
 
   // ------------------------------------------------------------ WASD: walk him around (camera-relative, Shift to hurry)
@@ -298,6 +300,72 @@ async function boot() {
   let shiftHeld = false;
   window.addEventListener('keydown', (e) => { if (e.key === 'Shift') shiftHeld = true; });
   window.addEventListener('keyup', (e) => { if (e.key === 'Shift') shiftHeld = false; });
+
+  // ------------------------------------------------------------ inside his brain
+  const bv = $('#brainview');
+  function remember(text) {
+    if (memory[0]?.text === text) return;
+    memory.unshift({ t: new Date(), text });
+    memory.length = Math.min(memory.length, 40);
+    if (!$('#brainview').hidden) renderMemory();
+  }
+  function renderMemory() {
+    $('#bv-log').replaceChildren(...memory.map((m) => { const li = document.createElement('li'); const tm = document.createElement('time'); tm.textContent = m.t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }); const sp = document.createElement('span'); sp.textContent = m.text; li.append(tm, sp); return li; }));
+  }
+  function renderVitals() {
+    const row = (k, v, wide) => `<div${wide ? ' class="wide"' : ''}><span>${k}</span> <b>${v}</b></div>`;
+    const esc = (x) => String(x).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+    $('#bv-vitals').innerHTML = row('Doing', esc(brain.activity), true)
+      + row('Mode', { life: 'living his life', cmd: 'following orders', user: 'on break', broken: 'broken' }[brain.mode] || brain.mode)
+      + row('Face', robot.face.expr)
+      + row('Battery', `${Math.round(robot.energy * 100)}%`)
+      + row('Integrity', `${Math.round(damage.integrity * 100)}%`)
+      + row('Mind', mind.status === 'ready' ? 'AI online' : mind.status === 'loading' ? `waking ${Math.round(mind.progress * 100)}%` : 'basic mode')
+      + row('Neural activity', `${Math.round(robot.brainActivity * 100)}%`);
+  }
+  let vitalsAcc = 0;
+  function toggleBrain(open = bv.hidden) {
+    bv.hidden = !open;
+    $('#btn-brain').classList.toggle('on', open);
+    robot.setXray(open);
+    if (!open) return;
+    renderVitals();
+    renderMemory();
+    if (inMac || flight) return;
+    // fly up to his face so you can see the brain through the glass
+    const head = robot.head.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.12, 0));
+    const fwd = robot.worldForward(new THREE.Vector3());
+    const side = new THREE.Vector3(-fwd.z, 0, fwd.x);
+    fly(head.clone().addScaledVector(fwd, 1.1).addScaledVector(side, 0.55).add(new THREE.Vector3(0, 0.25, 0)), head, 1.1).then(() => {
+      followRobot = true;
+      $('#btn-follow').classList.add('on');
+    });
+  }
+  $('#brain-close').addEventListener('click', () => toggleBrain(false));
+  /** Live view of one thought as it streams in. */
+  function showThinking(who) {
+    if (who !== 'agent') return null;
+    const el = $('#bv-thought');
+    el.classList.add('live');
+    el.textContent = '';
+    $('#bv-decision').textContent = '';
+    robot.brainActivity = 1;
+    return (u) => {
+      robot.brainActivity = 1;
+      el.textContent = u.thought || '…';
+      $('#bv-context').textContent = u.context;
+      $('#bv-json').textContent = u.raw;
+    };
+  }
+  function showDecision(d) {
+    const el = $('#bv-thought');
+    el.classList.remove('live');
+    el.textContent = d.thought || (d.source === 'rules' ? 'Basic mode: I spotted a keyword and went with my gut.' : '…');
+    const chip = (t) => { const i = document.createElement('i'); i.textContent = t; return i; };
+    $('#bv-decision').replaceChildren(chip(`action: ${d.action.replace(/_/g, ' ')}`), ...(d.place && d.place !== 'none' ? [chip(`→ ${d.place.replace(/_/g, ' ')}`)] : []), chip(`mood: ${d.mood || 'normal'}`), chip(d.source === 'qwen' ? 'MrAgent AI' : 'quick reply'));
+    if (d.raw) $('#bv-json').textContent = d.raw;
+    remember(`💭 ${d.thought || d.reply}`);
+  }
 
   // ------------------------------------------------------------ chat (Mr. Agent or Kuma)
   const chatEl = $('#chat'), chatInput = $('#chat-input');
@@ -354,8 +422,9 @@ async function boot() {
     const d = await mind.think(text, {
       activity: brain.activity, room: roomNow ? roomNow.name : 'garden', energy: robot.energy, integrity: damage.integrity,
       recentPunches, time: nowHHMM(),
-    }, 'agent');
+    }, 'agent', true, showThinking('agent'));
     pending.remove();
+    showDecision(d);
     robot.face.set(d.mood && d.mood !== 'normal' ? d.mood : 'happy', 2);
     const cmd = toCommand(d);
     const acting = d.action !== 'chat' && cmd;
@@ -474,7 +543,7 @@ async function boot() {
     } else if (!inMac) {
       if (followRobot) {
         const p = robot.root.position;
-        const tgt = new THREE.Vector3(p.x, 0.85, p.z);
+        const tgt = new THREE.Vector3(p.x, bv.hidden ? 0.85 : robot.head.getWorldPosition(headPos).y + 0.12, p.z);
         const delta = tgt.clone().sub(world.controls.target).multiplyScalar(1 - Math.exp(-dt * 3));
         world.controls.target.add(delta);
         world.camera.position.add(delta);
@@ -485,6 +554,8 @@ async function boot() {
     }
 
     updateDriveInput(shiftHeld);
+    robot.brainActivity = Math.max(brain.typing ? 0.25 : brain.mode === 'broken' ? 0 : 0.08, robot.brainActivity - dt * 0.6);
+    if (!bv.hidden && (vitalsAcc += dt) > 0.4) { vitalsAcc = 0; renderVitals(); }
     brain.update(dt);
     damage.update(dt);
     winpc.update(dt);

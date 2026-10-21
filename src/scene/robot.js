@@ -125,6 +125,19 @@ export class Robot {
     if (geos.cableSockets) this.mesh(this.head, 'cableSockets', this.mat.joint);
     this.mesh(this.head, 'antenna', this.mat.joint);
     this.mesh(this.head, 'antennaTip', this.mat.glowSoft);
+    // his brain, inside the head: only shown in x-ray mode
+    this.mat.brain = new THREE.MeshPhysicalMaterial({ color: 0xffb3c8, emissive: 0xff5c8a, emissiveIntensity: 0.6, roughness: 0.35, clearcoat: 0.6, transparent: true, opacity: 0.92 });
+    this.mat.brainFold = new THREE.MeshStandardMaterial({ color: 0x8a2be2, emissive: 0xb06bff, emissiveIntensity: 1.2, roughness: 0.4 });
+    this.mat.neuron = new THREE.MeshBasicMaterial({ color: new THREE.Color(3, 2.4, 0.8), toneMapped: false });
+    this.brain = grp(this.head, 0, 0, 0, 'brain');
+    for (const [n, m] of [['brainLobes', this.mat.brain], ['brainFolds', this.mat.brainFold], ['brainStem', this.mat.brain], ['brainNodes', this.mat.neuron]]) {
+      if (!geos[n]) continue;
+      const bm = new THREE.Mesh(geos[n], m);
+      bm.castShadow = false;
+      this.brain.add(bm);
+    }
+    this.brain.visible = false;
+    this.brainActivity = 0; // 0..1, set while he's thinking
 
     this.arms = [1, -1].map((s) => this.buildArm(s));
     this.legs = [1, -1].map((s) => this.buildLeg(s));
@@ -389,6 +402,7 @@ export class Robot {
     this.root.updateMatrixWorld(true);
     this.updateCables();
     this.updateLights(dt);
+    this.updateBrain(dt);
     this.faceT = (this.faceT || 0) + dt;
     if (this.faceT >= 1 / 30) { this.face.update(this.faceT); this.faceT = 0; } // the visor canvas only needs 30 fps
   }
@@ -493,6 +507,33 @@ export class Robot {
       col.setXYZ(i, isOn ? on[0] * blink : 0.08, isOn ? on[1] * blink : 0.09, isOn ? on[2] * blink : 0.1);
     }
     col.needsUpdate = true;
+  }
+
+  /** X-ray: the head turns to glass so you can see his brain working. */
+  setXray(on) {
+    this.xray = on;
+    this.brain.visible = on;
+    if (!this.glassMat) {
+      this.glassMat = new THREE.MeshPhysicalMaterial({ color: 0xdff4ff, roughness: 0.05, metalness: 0, transparent: true, opacity: 0.18, depthWrite: false, clearcoat: 1, side: THREE.DoubleSide });
+      this.glassVisor = this.mat.visor.clone();
+      this.glassVisor.transparent = true;
+      this.glassVisor.opacity = 0.35;
+      this.glassVisor.depthWrite = false;
+      this.headShells = this.head.children.filter((m) => m.isMesh && (m.geometry === this.geos.head || m.geometry === this.geos.ears)).map((m) => [m, m.material]);
+    }
+    for (const [m, orig] of this.headShells) { m.material = on ? this.glassMat : orig; m.castShadow = !on; }
+    this.visor.material = on ? this.glassVisor : this.mat.visor;
+  }
+
+  updateBrain(dt) {
+    if (!this.xray) return;
+    this.brainT = (this.brainT || 0) + dt * (1 + this.brainActivity * 6);
+    const a = this.brainActivity;
+    this.mat.brain.emissiveIntensity = 0.5 + a * 2.5 + Math.sin(this.brainT * 3) * 0.2;
+    this.mat.brainFold.emissiveIntensity = 1 + a * 4 * (0.5 + 0.5 * Math.sin(this.brainT * 9));
+    const n = 0.6 + a * 2.4 * (Math.sin(this.brainT * 17) > 0 ? 1 : 0.3);
+    this.mat.neuron.color.setRGB(3 * n, 2.4 * n, 0.8 * n);
+    this.brain.scale.setScalar(1 + Math.sin(this.brainT * 2) * 0.01 + a * 0.015 * Math.sin(this.brainT * 11));
   }
 
   /** Index fingertip world position (handy for pressing buttons). */

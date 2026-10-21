@@ -40,6 +40,7 @@
       <button data-act="sleep" title="Nap (Z)"><span class="ico">😴</span><span class="lbl">Nap</span><kbd>Z</kbd></button>
       <button data-act="wave" title="Say hi (H)"><span class="ico">👋</span><span class="lbl">Wave</span><kbd>H</kbd></button>
       <span class="sep"></span>
+      <button data-act="brain" id="btn-brain" title="See inside his brain (I)"><span class="ico">🧠</span><span class="lbl">Brain</span><kbd>I</kbd></button>
       <button data-act="punch" id="btn-punch" title="Punch mode: click him to punch (P)"><span class="ico">🥊</span><span class="lbl">Punch</span><kbd>P</kbd></button>
       <button data-act="repair" id="btn-repair" title="Repair him (U)"><span class="ico">🔧</span><span class="lbl">Repair</span><kbd>U</kbd></button>
       <span class="sep"></span>
@@ -50,6 +51,16 @@
       <button data-act="sound" id="btn-sound" title="Sound (V)"><span class="ico">🔊</span><span class="lbl">Sound</span><kbd>V</kbd></button>
     </nav>
 
+    <section class="hud card" id="brainview" aria-label="Inside his brain" hidden>
+      <header><b>🧠 Inside Mr. Agent’s brain</b><button id="brain-close" title="Close (I)">✕</button></header>
+      <div class="bv-vitals" id="bv-vitals"></div>
+      <h4>Inner monologue</h4>
+      <div class="bv-thought" id="bv-thought"><span class="bv-dim">Talk to him (💬) and watch him think…</span></div>
+      <div class="bv-decision" id="bv-decision"></div>
+      <details class="bv-raw"><summary>What his mind is told, and what it wrote back</summary><pre id="bv-context"></pre><pre id="bv-json"></pre></details>
+      <h4>Memory</h4>
+      <ol class="bv-log" id="bv-log"></ol>
+    </section>
     <section class="hud card" id="chat" aria-label="Talk to Mr. Agent" hidden>
       <header><div id="chat-tabs"><button data-who="agent" class="on">🤖 Mr. Agent</button><button data-who="kuma">🐻 Kuma</button></div><button id="chat-close" title="Close (Esc)">✕</button></header>
       <div id="chat-brain"><span id="chat-model">🧠 MrAgent</span><button id="chat-load" hidden>Wake up MrAgent</button><div id="chat-bar" hidden><i></i></div></div>

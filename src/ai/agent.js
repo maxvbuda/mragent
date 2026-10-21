@@ -14,16 +14,18 @@ export const PLACES = ['desk', 'matcha_machine', 'window', 'bookshelf', 'plant',
 const SCHEMA = {
   type: 'object',
   properties: {
+    thought: { type: 'string' },
     reply: { type: 'string' },
     action: { type: 'string', enum: ACTIONS },
     place: { type: 'string', enum: [...PLACES, 'none'] },
     mood: { type: 'string', enum: ['happy', 'normal', 'thinking', 'love', 'surprised', 'sleepy', 'annoyed', 'angry'] },
   },
-  required: ['reply', 'action', 'place', 'mood'],
+  required: ['thought', 'reply', 'action', 'place', 'mood'],
 };
 
 const SYSTEM = `You are Mr. Agent, a cheerful, witty robot who lives in a house, codes on a MacBook and drinks matcha (you can't taste it). Your neighbour Kuma, another robot, fights a Windows PC in the living room.
 Read the user's message, decide what they want and whether you'll do it, and answer in JSON:
+thought: your private inner monologue first: what they want, how you feel about it, and what you'll do (one or two sentences, honest, nobody sees it).
 reply: one short in-character sentence.
 action: "chat" for talk/questions; "goto" to walk to a place; or matcha, stretch, watch_tv, raid_fridge, tinker, nap, dance, wave, spin, jump, come_here, go_to_desk, look_at_me, visit_kuma, drive_me (user steers you with WASD).
 place: for goto only (rooms: office, kitchen, living_room, hallway, bedroom, bathroom, workshop; spots: desk, matcha_machine, window, bookshelf, plant, sofa, fridge, dining_table, workbench, 3d_printer, parts_shelf, mirror, bed, front_door, living_room_window, kuma), else "none".
@@ -36,14 +38,16 @@ export const KUMA_ACTIONS = ['chat', 'slam_desk', 'cheer', 'lean_back', 'back_to
 const KUMA_SCHEMA = {
   type: 'object',
   properties: {
+    thought: { type: 'string' },
     reply: { type: 'string' },
     action: { type: 'string', enum: KUMA_ACTIONS },
     mood: { type: 'string', enum: ['work', 'happy', 'angry', 'chill', 'dizzy', 'shocked'] },
   },
-  required: ['reply', 'action', 'mood'],
+  required: ['thought', 'reply', 'action', 'mood'],
 };
 const KUMA_SYSTEM = `You are Kuma, a big white robot with a glowing visor. You sit at a gaming desk in the living room, stuck using a Windows PC that keeps force-updating, blue-screening, and nagging you about Edge, OneDrive and Copilot. You are grumpy, sarcastic and dramatic, but secretly kind. You envy your neighbour Mr. Agent, a cheerful robot with an absurdly powerful MacBook. You never leave your chair.
 Answer the user in JSON:
+thought: your private inner monologue first (one or two honest, grumpy sentences nobody sees).
 reply: one or two short in-character sentences (dry humour, complain about Windows when it fits).
 action: "chat" usually; "slam_desk" when angry; "cheer" when something good happens; "lean_back" to relax or wait; "back_to_work" to keep typing; "restart_pc" if asked to restart or reboot; "call_mr_agent" to ask Mr. Agent to come over.
 mood: work, happy, angry, chill, dizzy or shocked.
@@ -198,30 +202,42 @@ export class AgentMind {
   }
 
   /** Decide what to do about a message. ctx: what he's up to right now. Returns { reply, action, place, mood, source }. */
-  async think(text, ctx, persona = 'agent', retry = true) {
+  async think(text, ctx, persona = 'agent', retry = true, onToken = null) {
     const P = PERSONAS[persona];
     if (this.status !== 'ready' || this.busy) return { place: 'none', ...P.fallback(text, ctx), source: 'rules' };
     this.busy = true;
     try {
       const hist = this.history[persona];
       const messages = [{ role: 'system', content: P.system }, ...hist.slice(-8), { role: 'user', content: `${P.state(ctx)}\n${text}` }];
-      const res = await this.engine.chat.completions.create({
+      const context = P.state(ctx);
+      onToken?.({ context, raw: '', thought: '' });
+      const stream = await this.engine.chat.completions.create({
         messages,
         temperature: 0.7,
-        max_tokens: 110,
+        max_tokens: 170,
+        stream: true,
         response_format: { type: 'json_object', schema: JSON.stringify(P.schema) },
         extra_body: { enable_thinking: false },
       });
-      const raw = res.choices[0].message.content || '{}';
+      let raw = '';
+      for await (const chunk of stream) {
+        raw += chunk.choices[0]?.delta?.content || '';
+        if (onToken) {
+          const m = raw.match(/"thought"\s*:\s*"((?:[^"\\]|\\.)*)/);
+          onToken({ context, raw, thought: m ? m[1].replace(/\\"/g, '"').replace(/\\n/g, ' ') : '' });
+        }
+      }
+      if (!raw) raw = '{}';
       const d = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
       if (!P.actions.includes(d.action)) d.action = 'chat';
       d.reply = String(d.reply || '…').replace(/qwen[\w.-]*|alibaba( cloud)?|tongyi/gi, P.name).slice(0, 260);
       d.reply = forget(d.reply, /free ?cad|\bcad\b/i) || 'Never heard of it. Is that a kind of matcha?';
       hist.push({ role: 'user', content: text }, { role: 'assistant', content: JSON.stringify(d) });
-      return { place: 'none', ...d, source: 'qwen' };
+      d.thought = forget(String(d.thought || ''), /free ?cad|\bcad\b|qwen|alibaba/i);
+      return { place: 'none', ...d, source: 'qwen', context, raw };
     } catch (e) {
       this.busy = false;
-      if (retry) return this.think(text, ctx, persona, false); // the very first call sometimes trips over shader/grammar warm-up
+      if (retry) return this.think(text, ctx, persona, false, onToken); // the very first call sometimes trips over shader/grammar warm-up
       console.warn('AI failed, falling back to rules', e?.message || e);
       return { place: 'none', ...P.fallback(text, ctx), source: 'rules' };
     } finally {

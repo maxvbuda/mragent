@@ -554,7 +554,7 @@ MAT = {"waistSpring": "chrome", "neck": "chrome", "elbowCaps": "chrome", "wrist"
        "chestLight": "glow", "earGlow": "glow", "antennaTip": "glow", "batteryLeds": "glow", "forearmLed": "glow",
        "coffeeButton": "glow", "lampBulb": "glow", "visor": "visor", "deskTop": "wood", "sideboardTop": "wood",
        "shelf": "wood", "laptopBase": "alu", "laptopLid": "alu", "chairSeat": "fabric", "chairBack": "fabric",
-       "mug": "mug", "coffee": "leaf", "chestPlate": "white", "coreGlow": "glow", "coreCage": "chrome", "spineCore": "chrome",
+       "mug": "mug", "coffee": "leaf", "chestPlate": "white", "coreGlow": "glow", "coreCage": "chrome", "spineCore": "chrome", "brainLobes": "glow", "brainFolds": "white", "brainNodes": "yellow", "brainStem": "glow",
        "batteryCells": "leaf", "batteryCaps": "chrome", "pcbBoards": "leaf", "servos": "dark", "wireRed": "red", "wireBlue": "blue", "wireYellow": "yellow", "soil": "brown", "leaves": "leaf", "stems": "leaf", "pot": "cream",
        "cableRed": "red", "cableBlue": "blue", "cableYellow": "yellow", "cableSockets": "dark", "deskFrame": "white", "windowFrame": "white",
        "windowSill": "white", "sideboard": "cream", "lampShade": "cream", "lampBase": "dark", "notebook": "blue",
@@ -593,7 +593,7 @@ neck = waist * Pl(0, 0, 470)
 for n in ("neckCollar", "neck", "neckRings", "cableRed", "cableBlue", "cableYellow"):
     show(n, n, neck)
 head = neck * Pl(0, 0, 74) * Pl(axis=(1, 0, 0), deg=-12)
-for n in ("head", "visor", "ears", "earGlow", "cableSockets", "antenna", "antennaTip"):
+for n in ("head", "visor", "ears", "earGlow", "cableSockets", "antenna", "antennaTip", "brainLobes", "brainFolds", "brainStem", "brainNodes"):
     show(n, n, head)
 for side in (1, -1):
     s = "R" if side > 0 else "L"

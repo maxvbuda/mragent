@@ -25,6 +25,7 @@ workshop. Walls between you and what you're looking at drop down automatically
 | **/** or the 💬 button | Talk to him. Qwen decides what you mean and whether he'll do it |
 | **W A S D** (+ Shift) | Walk him around yourself, relative to the camera (Shift hurries) |
 | Click the robot (or **H**) | He waves and says hi |
+| **I** | See inside his brain: x-ray head, live thoughts, memory |
 | **P**, then click him | Punch mode: he flinches, then his chest plate, backpack, an arm and finally his head come off |
 | **U** | Repair: the parts fly back on and he reboots |
 | Click Kuma's monitor | Use Kuma's Windows PC |
@@ -58,6 +59,12 @@ stands in. Set `localStorage['mragent.qwen'] = 'off'` to stop the automatic down
 
 In the chat the AI is called **MrAgent**, and it doesn't know how it was built: replies
 that mention FreeCAD or CAD are cut out.
+
+**Inside his brain (I, or 🧠 Brain).** His head turns to glass and shows a brain modelled in
+FreeCAD (two lobes, folds, glowing neurons and a stem), which lights up and pulses while he
+thinks. A panel shows his vitals and what he's doing, his private inner monologue streaming in
+token by token as the AI writes it, the decision he made, exactly what his mind was told and
+the raw JSON it wrote back, and a memory log of everything he's done and been through.
 
 **Kuma has his own AI** (the 🐻 Kuma tab, or click him). He uses the same model with his own
 personality: grumpy, sarcastic, worn down by Windows and jealous of Mr. Agent's Mac. He's told
