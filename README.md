@@ -32,7 +32,8 @@ workshop. Walls between you and what you're looking at drop down automatically
 | **C** · **Y** · **O** · **N** | Matcha run · stretch · look out the window · dance break |
 | **G** · **B** · **K** · **Z** | Watch TV on the sofa · raid the fridge · tinker in the workshop · nap |
 | **X** | Walls: cutaway, down or up |
-| **0–7** | Whole house, or jump to a room |
+| **0–8** | Whole house, a room, or the garden |
+| **E** | RoboMart: order something for Mr. Agent or Kuma |
 | **T** | Time of day: real clock, morning, afternoon, sunset, night |
 | **F** · **R** · **V** | Follow him with the camera · reset the view · sound on/off |
 | Drag / scroll | Orbit / zoom |
@@ -44,6 +45,31 @@ tinkering at the workbench (with sparks), checking himself in the bathroom mirro
 watching the 3D printer, or peeking out of the front door. At night he goes to bed
 and charges until morning. He paths through the doorways with A\* and his feet stay
 planted while he walks.
+
+## Outside and ordering things
+
+The house stands on a plinth in a garden, 0.3 m above the lawn. Both robots can walk out of the front door: it opens as they
+get close, and they step down the porch steps. Outside there's a garden bench, a mailbox, a lawn,
+the backyard and a side yard. **8** (or 🌳 Garden) flies the camera outside. Ask either robot to
+go outside in the chat. Kuma stands up from his gaming chair, walks out and sits on the bench, and
+heads back after a while.
+
+**🛒 RoboMart (E)** lets you order things for Mr. Agent or Kuma, from the shop or by asking in chat
+("order Kuma a Linux USB"). A delivery drone modelled in FreeCAD flies in, drops a parcel on the
+porch and rings the bell. Whoever it's for walks out, picks it up, carries it inside, sets it down
+and unboxes it, and the item flies to its place:
+
+| Item | What happens |
+|---|---|
+| 🍵 Matcha tin | Mug and battery refilled |
+| 🦆 Rubber duck · 🪴 plant · 🏆 trophy | Go on the desk |
+| 🍕 Pizza | Goes on the dining table (they can't eat it) |
+| 🔋 Battery pack | Full charge |
+| 🎈 Balloons | Float by the desk, music starts, Mr. Agent dances |
+| ⌨️ RGB keyboard | Kuma types faster |
+| 🐧 Linux USB | Kuma's PC runs Linux for 90 s of peace, until Windows Update "restores" Windows |
+| 💻 MacBook Air | Kuma is overjoyed and Windows stops nagging for a while |
+| 🧰 Spare parts kit | Repairs a broken Mr. Agent (Kuma will do it if it's his) |
 
 ## Talking to him
 

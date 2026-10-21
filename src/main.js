@@ -15,6 +15,7 @@ import { WinPC } from './win/pc.js';
 import { WinOS } from './win/os.js';
 import { Damage } from './scene/damage.js';
 import { AgentMind, toCommand } from './ai/agent.js';
+import { Delivery, ITEMS } from './scene/delivery.js';
 
 const $ = (s) => document.querySelector(s);
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -36,7 +37,7 @@ async function boot() {
   world.scene.add(robot.root);
   const house = buildHouse(world.scene, geos, layout, M, geos, robot.mat);
   world.attachRoom(room, house);
-  const nav = new NavGrid(layout, { extra: house.wallObstacles });
+  const nav = new NavGrid(layout, { extra: house.wallObstacles, bounds: layout.house.outside?.bounds });
 
   const hud = makeHud();
   const memories = { agent: [], kuma: [] }; // what each robot remembers (shown in the brain view)
@@ -56,7 +57,7 @@ async function boot() {
   // Kuma, at his Windows PC in the living room
   const winpc = new WinPC();
   if (house.winScreen) { house.winScreen.mat.map = winpc.texture; house.winScreen.mat.color.setScalar(1); house.winScreen.mat.needsUpdate = true; }
-  const kuma = new Kuma(world.scene, layout, { say: hud.kumaSay });
+  const kuma = new Kuma(world.scene, layout, { say: hud.kumaSay, nav, groundY: house.groundY, spots: brain.spots });
   winpc.on((e, data) => {
     kuma.react(e, data);
     const what = { bsod: '💥 Blue screen. Again.', update: '🔄 Windows started updating without asking.', work: '⌨️ PC is back. Typing.', win: '🎉 Something actually worked!', popup: `📢 Pop-up from ${data?.app || 'Windows'}: “${data?.title || ''}”` }[e];
@@ -78,9 +79,103 @@ async function boot() {
   let recentPunches = 0;
   setInterval(() => { recentPunches = Math.max(0, recentPunches - 1); }, 20000);
 
+  // ------------------------------------------------------------ RoboMart: order things, a drone drops them on the porch
+  const delivery = new Delivery({
+    scene: world.scene, geos, layout, M, audio,
+    hooks: {
+      changed: () => renderOrders(),
+      arrived: (o) => { hud.toast(`📦 ${o.item.emoji} ${o.item.name} is on the porch`); remember(`📦 Parcel on the porch: ${o.item.name}`, o.who); dispatch(o); },
+      unboxed: (o, who) => itemEffect(o, who),
+    },
+  });
+  brain.delivery = delivery;
+  const waitingFor = { agent: [], kuma: [] };
+  /** Send the right robot out for a parcel (or queue it if they're busy). */
+  function dispatch(o) {
+    if (o.who === 'kuma') { kuma.fetch(o, delivery); return; } // Kuma queues his own errands
+    if (brain.broken || brain.mode === 'user' || brain.fetching) { waitingFor.agent.push(o); return; }
+    brain.fetching = true;
+    brain.command({ type: 'fetch', order: o });
+  }
+  setInterval(() => {
+    // pick up anything still waiting once they're free again
+    if (!brain.fetching && !brain.broken && brain.mode !== 'user' && waitingFor.agent.length) dispatch(waitingFor.agent.shift());
+    if (brain.fetching && brain.mode !== 'cmd') brain.fetching = false;
+  }, 1500);
+  function itemEffect(o, who) {
+    const id = o.itemId;
+    const agentSay = (t) => brain.say(t, 3.2);
+    remember(`🎁 Unboxed: ${o.item.name}`, who);
+    hud.toast(`🎁 ${who === 'kuma' ? 'Kuma' : 'Mr. Agent'} unboxed ${o.item.emoji} ${o.item.name}`);
+    if (who === 'agent') brain.fetching = false;
+    if (who === 'kuma') {
+      kuma.cheer = 0;
+      kuma.setMood('happy');
+      if (id === 'linuxUsb') { kuma.say('A Linux USB?! Rebooting RIGHT NOW.'); setTimeout(() => winpc.linux(90), 2500); return; }
+      if (id === 'macbook') { kuma.say(pick(['A MAC? For ME? I’m… I’m not crying, it’s coolant.', 'Mr. Agent, LOOK. I’m one of you now.'])); winpc.peace(150); return; }
+      if (id === 'keyboard') { kuma.typeBoost = true; kuma.say('Clicky. Clacky. Now I can rage-type twice as fast.'); return; }
+      if (id === 'spareParts') { if (damage.hits || damage.lost.length) { kuma.say('Spare parts? Hold on, Mr. Agent, I’ll fix you.'); damage.repair(); } else kuma.say('Spare parts. Nice. I’ll keep them for when Windows breaks me.'); return; }
+      kuma.say({ matcha: 'Matcha. I don’t even have a mug. Thanks though.', duck: 'A duck. I will explain my bugs to it. It will judge me.', pizza: 'I can’t eat pizza. Put it on the table for the humans.', battery: 'Ooh, fresh electrons. Better than coffee.', plant: 'A plant. It’ll be the only thing on this desk that’s thriving.', balloons: 'Balloons? Is it my birthday? Is it Patch Tuesday?', trophy: '“World’s Best Robot”. Finally, some recognition.' }[id] || 'For me? Thanks!');
+      if (id === 'balloons' && !music.playing) music.play();
+      return;
+    }
+    if (id === 'matcha') { brain.fill = 1; room.setFill(1); robot.energy = 1; agentSay('Ceremonial grade! The mug is full and so is my heart.'); return; }
+    if (id === 'battery') { robot.energy = 1; agentSay('Mmm, 100%. I feel like a new robot.'); return; }
+    if (id === 'spareParts') { if (damage.hits || damage.lost.length) damage.repair(); else agentSay('Spare parts! I’ll keep them in case someone punches me again. 👀'); return; }
+    if (id === 'balloons') { agentSay('PARTY! 🎈'); if (!music.playing) music.play(); brain.command({ type: 'dance', seconds: 12 }); return; }
+    if (id === 'linuxUsb') { agentSay('Linux? I’ll give this to Kuma. He needs it more than I do.'); return; }
+    if (id === 'macbook') { agentSay('Another Mac? Now I can code in stereo.'); return; }
+    agentSay({ duck: 'Hello, duck. Let me explain my code to you. Line one…', pizza: 'I can’t eat this. I’ll put it on the dining table for guests.', plant: 'A new friend for the fern!', trophy: 'World’s Best Robot? Me? 🥹', keyboard: 'Clicky! Kuma would love this.' }[id] || 'Thank you!');
+  }
+
+  // shop panel
+  const shopEl = $('#shop');
+  let shopFor = 'agent';
+  const STATUS = { processing: 'Packing…', flying: '🚁 On its way', delivered: '📦 On the porch', carrying: '🚶 Being carried in', unboxing: '🎁 Unboxing', unboxed: '✓ Delivered' };
+  function renderShop() {
+    $('#shop-grid').replaceChildren(...Object.entries(ITEMS).map(([id, it]) => {
+      const b = document.createElement('button');
+      b.className = 'shop-item';
+      b.innerHTML = `<span class="e">${it.emoji}</span><b></b><small></small><i>$${it.price}</i>`;
+      b.querySelector('b').textContent = it.name;
+      b.querySelector('small').textContent = it.desc;
+      b.addEventListener('click', () => placeOrder(id, shopFor));
+      return b;
+    }));
+  }
+  function placeOrder(id, who) {
+    audio.unlock();
+    const o = delivery.order(id, who);
+    if (!o) return null;
+    audio.pop();
+    hud.toast(`🛒 Ordered ${o.item.emoji} ${o.item.name} for ${who === 'kuma' ? 'Kuma' : 'Mr. Agent'}`);
+    remember(`🛒 Someone ordered me ${o.item.name}`, who);
+    return o;
+  }
+  function renderOrders() {
+    const list = $('#shop-orders');
+    if (!delivery.orders.length) return;
+    list.replaceChildren(...delivery.orders.slice(-8).reverse().map((o) => {
+      const li = document.createElement('li');
+      li.innerHTML = `<span>${o.item.emoji}</span><span></span><span class="st ${o.status}">${STATUS[o.status] || o.status}</span>`;
+      li.children[1].textContent = `${o.item.name} → ${o.who === 'kuma' ? 'Kuma' : 'Mr. Agent'}`;
+      return li;
+    }));
+  }
+  document.querySelectorAll('.shop-for button').forEach((b) => b.addEventListener('click', () => {
+    shopFor = b.dataset.for;
+    document.querySelectorAll('.shop-for button').forEach((x) => x.classList.toggle('on', x === b));
+  }));
+  function toggleShop(open = shopEl.hidden) {
+    shopEl.hidden = !open;
+    $('#btn-shop').classList.toggle('on', open);
+    if (open && !$('#shop-grid').children.length) renderShop();
+  }
+  $('#shop-close').addEventListener('click', () => toggleShop(false));
+
   // his mind: Qwen3-1.7B in the browser (WebLLM), with a rule-based fallback
   const mind = new AgentMind();
-  window.__mr = { world, robot, brain, room, house, screen, THREE, kuma, winpc, damage, mind }; // handy for poking at things from devtools
+  window.__mr = { world, robot, brain, room, house, screen, THREE, kuma, winpc, damage, mind, delivery }; // handy for poking at things from devtools
 
   const mac = new MacOS($('#mac'), {
     robot, brain, screen, world, music, audio, room, layout,
@@ -249,6 +344,7 @@ async function boot() {
     },
     chat: () => toggleChat(true),
     brain: () => toggleBrain(),
+    shop: () => toggleShop(),
     walls: () => {
       const order = ['cutaway', 'down', 'up'];
       house.wallMode = order[(order.indexOf(house.wallMode) + 1) % order.length];
@@ -266,7 +362,7 @@ async function boot() {
     actions[b.dataset.act]();
     e.currentTarget.blur();
   }));
-  const keymap = { m: 'mac', c: 'coffee', y: 'stretch', o: 'window', n: 'dance', h: 'wave', t: 'time', v: 'sound', r: 'reset', f: 'follow', g: 'tv', k: 'tinker', b: 'snack', z: 'sleep', x: 'walls', p: 'punch', u: 'repair', i: 'brain' };
+  const keymap = { m: 'mac', c: 'coffee', y: 'stretch', o: 'window', n: 'dance', h: 'wave', t: 'time', v: 'sound', r: 'reset', f: 'follow', g: 'tv', k: 'tinker', b: 'snack', z: 'sleep', x: 'walls', p: 'punch', u: 'repair', i: 'brain', e: 'shop' };
   const typing = (e) => /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
 
   // ------------------------------------------------------------ WASD: walk him around (camera-relative, Shift to hurry)
@@ -464,7 +560,11 @@ async function boot() {
     const cmd = toCommand(d);
     const acting = d.action !== 'chat' && cmd;
     addMsg('bot', d.reply, `${d.source === 'qwen' ? 'MrAgent AI' : 'quick reply'}${acting ? ` · ${d.action.replace(/_/g, ' ')}${d.place && d.place !== 'none' ? ` → ${d.place.replace(/_/g, ' ')}` : ''}` : ''}`, log);
-    if (acting) {
+    if (acting && cmd.type === 'order') {
+      const forKuma = /\bkuma\b/i.test(text);
+      placeOrder(cmd.item, forKuma ? 'kuma' : 'agent');
+      brain.say(d.reply, Math.min(6, 1.5 + d.reply.length / 18));
+    } else if (acting) {
       brain.command(cmd);
       if (cmd.type === 'drive') { brain.driving = true; followRobot = true; autoFollow = true; $('#btn-follow').classList.add('on'); }
     } else brain.say(d.reply, Math.min(6, 1.5 + d.reply.length / 18));
@@ -483,6 +583,14 @@ async function boot() {
     addMsg('bot', d.reply, `${d.source === 'qwen' ? 'Kuma AI' : 'quick reply'}${acting ? ` · ${d.action.replace(/_/g, ' ')}` : ''}`, log);
     hud.kumaSay(d.reply, Math.min(7, 2 + d.reply.length / 16));
     kuma.act(d.action, d.mood);
+    if (d.action === 'order_item' && d.item && d.item !== 'none') placeOrder(d.item, 'kuma');
+    if (d.action === 'go_outside') kuma.goTo('garden');
+    if (d.action === 'sit_on_garden_bench') kuma.goTo('gardenBench');
+    if (d.action === 'back_to_work' && !kuma.atDesk) kuma.backToDesk();
+    if (d.action === 'visit_mr_agent') {
+      const p = robot.root.position, f = robot.worldForward(new THREE.Vector3());
+      kuma.goToPoint(p.clone().addScaledVector(f, 1.0).setY(0), p.clone());
+    }
     if (d.action === 'restart_pc') setTimeout(() => winpc.forceUpdate(), 1200);
     if (d.action === 'call_mr_agent' && !brain.broken) brain.command({ type: 'goto', target: 'kuma', label: 'Kuma called for help', say: pick(['Coming, Kuma!', 'On my way — hold on!', 'Did it blue-screen again?']) });
   }
@@ -512,6 +620,7 @@ async function boot() {
     document.querySelectorAll('#rooms button').forEach((b) => b.classList.toggle('on', b.dataset.room === id));
     if (id === 'house') { fly(world.overview.pos.clone(), world.overview.target.clone(), 1.4); return; }
     if (id === 'office') { fly(world.home.pos.clone(), world.home.target.clone(), 1.2); return; }
+    if (id === 'garden') { fly(new THREE.Vector3(16.5, 4.2, -6.5), new THREE.Vector3(11.0, 0, -1.6), 1.4); return; }
     const r = house.rooms.find((x) => x.id === id);
     const [x0, z0, x1, z1] = r.rect;
     const c = new THREE.Vector3((x0 + x1) / 2, 0.7, (z0 + z1) / 2);
@@ -520,7 +629,7 @@ async function boot() {
     fly(pos, c, 1.2);
   };
   const roomsBar = $('#rooms');
-  [['house', '🏠 House'], ...house.rooms.map((r) => [r.id, r.name])].forEach(([id, label], i) => {
+  [['house', '🏠 House'], ...house.rooms.map((r) => [r.id, r.name]), ['garden', '🌳 Garden']].forEach(([id, label], i) => {
     const b = document.createElement('button');
     b.dataset.room = id;
     b.textContent = label;
@@ -529,8 +638,8 @@ async function boot() {
     roomsBar.append(b);
   });
   window.addEventListener('keydown', (e) => {
-    if (inMac || typing(e) || e.metaKey || e.ctrlKey || e.altKey || !/^[0-7]$/.test(e.key)) return;
-    goRoom(e.key === '0' ? 'house' : house.rooms[+e.key - 1].id);
+    if (inMac || typing(e) || e.metaKey || e.ctrlKey || e.altKey || !/^[0-8]$/.test(e.key)) return;
+    goRoom(e.key === '0' ? 'house' : e.key === '8' ? 'garden' : house.rooms[+e.key - 1].id);
   });
   window.addEventListener('keydown', (e) => {
     if (inMac || typing(e) || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -541,7 +650,7 @@ async function boot() {
   let followRobot = false;
 
   // Keep the camera above the ground and near the house; walls in the way are cut away instead.
-  const [hx0, hz0, hx1, hz1] = layout.house.bounds;
+  const [hx0, hz0, hx1, hz1] = layout.house.outside?.bounds || layout.house.bounds; // the camera may look around the garden too
   const houseCenter = new THREE.Vector3((hx0 + hx1) / 2, 0, (hz0 + hz1) / 2);
   function keepInRoom(v, margin, isTarget = false) {
     if (isTarget) {
@@ -593,8 +702,18 @@ async function boot() {
     robot.brainActivity = Math.max(brain.typing ? 0.25 : brain.mode === 'broken' ? 0 : 0.08, robot.brainActivity - dt * 0.6);
     if (!bv.hidden && (vitalsAcc += dt) > 0.4) { vitalsAcc = 0; renderVitals(); }
     brain.update(dt);
+    // stand on the ground (the garden is lower than the house), and open the front door for anyone passing
+    robot.root.position.y = house.groundY(robot.root.position.x, robot.root.position.z);
+    if (house.frontDoor && layout.house.outside) {
+      const [dx, dz] = layout.house.outside.door;
+      const near = [robot.root.position, kuma.mover.position].some((p) => Math.hypot(p.x - dx, p.z - dz) < 1.5);
+      if (near) house.frontDoor.target = Math.min(house.frontDoor.target, -1.45);
+      else if (house.frontDoor.auto) house.frontDoor.target = 0;
+      house.frontDoor.auto = near;
+    }
     damage.update(dt);
     winpc.update(dt);
+    delivery.update(dt, now);
     kuma.update(dt, now);
     robot.update(dt, world.camera);
     screen.update(dt);

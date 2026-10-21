@@ -40,6 +40,7 @@
       <button data-act="sleep" title="Nap (Z)"><span class="ico">😴</span><span class="lbl">Nap</span><kbd>Z</kbd></button>
       <button data-act="wave" title="Say hi (H)"><span class="ico">👋</span><span class="lbl">Wave</span><kbd>H</kbd></button>
       <span class="sep"></span>
+      <button data-act="shop" id="btn-shop" title="Order something for them (E)"><span class="ico">🛒</span><span class="lbl">Shop</span><kbd>E</kbd></button>
       <button data-act="brain" id="btn-brain" title="See inside his brain (I)"><span class="ico">🧠</span><span class="lbl">Brain</span><kbd>I</kbd></button>
       <button data-act="punch" id="btn-punch" title="Punch mode: click him to punch (P)"><span class="ico">🥊</span><span class="lbl">Punch</span><kbd>P</kbd></button>
       <button data-act="repair" id="btn-repair" title="Repair him (U)"><span class="ico">🔧</span><span class="lbl">Repair</span><kbd>U</kbd></button>
@@ -51,6 +52,13 @@
       <button data-act="sound" id="btn-sound" title="Sound (V)"><span class="ico">🔊</span><span class="lbl">Sound</span><kbd>V</kbd></button>
     </nav>
 
+    <section class="hud card" id="shop" aria-label="RoboMart" hidden>
+      <header><b>🛒 RoboMart</b><span class="shop-sub">Drone delivery to the front porch</span><button id="shop-close" title="Close (E)">✕</button></header>
+      <div class="shop-for">For <button data-for="agent" class="on">🤖 Mr. Agent</button><button data-for="kuma">🐻 Kuma</button></div>
+      <div class="shop-grid" id="shop-grid"></div>
+      <h4>Your orders</h4>
+      <ol class="shop-orders" id="shop-orders"><li class="bv-dim">Nothing yet.</li></ol>
+    </section>
     <section class="hud card" id="brainview" aria-label="Inside his brain" hidden>
       <header><b>🧠 Inside Mr. Agent’s brain</b><button id="brain-close" title="Close (I)">✕</button></header>
       <div class="bv-vitals" id="bv-vitals"></div>
@@ -74,7 +82,7 @@
     <div id="kbubble" class="hud bubble-kuma"></div>
     <div id="tip"></div>
     <div id="toast" class="hud"></div>
-    <p class="hud" id="hint">WASD walk him around · / talk to him · drag to orbit · 0–7 rooms · click his MacBook or Kuma’s PC</p>
+    <p class="hud" id="hint">WASD walk him around · / talk · E shop · drag to orbit · 0–8 rooms & garden · click his MacBook or Kuma’s PC</p>
 
     <div id="mac" hidden></div>
     <div id="win" hidden></div>

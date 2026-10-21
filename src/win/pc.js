@@ -99,13 +99,19 @@ export class WinPC {
   crash() { if (this.state === 'desktop') this.set('bsod'); }
   forceUpdate() { if (this.state === 'desktop') this.set('update'); }
 
+  /** Kuma boots Linux off a USB stick: peace and quiet, until Windows Update notices. */
+  linux(seconds = 90) { this.linuxFor = seconds; this.set('linux'); }
+  /** No nagging for a while (Kuma's busy with his new Mac). */
+  peace(seconds = 120) { this.peaceT = seconds; }
+
   update(dt) {
     this.t += dt;
     this.stateT += dt;
     if (this.toast) { this.toastT -= dt; if (this.toastT <= 0) this.toast = null; }
+    if (this.peaceT > 0) this.peaceT -= dt;
     if (this.state === 'desktop') {
       if (!this.inUse) this.typed += dt * 9;
-      this.next -= dt;
+      if (!(this.peaceT > 0)) this.next -= dt;
       if (this.next <= 0) {
         this.next = (this.inUse ? 35 : 22) + Math.random() * 25;
         const r = Math.random();
@@ -124,6 +130,13 @@ export class WinPC {
       if (t > 16.5) this.set('boot');
     } else if (this.state === 'boot') {
       if (this.stateT > 4.5) this.set('desktop');
+    } else if (this.state === 'linux') {
+      this.typed += dt * 14;
+      if (this.stateT > this.linuxFor) {
+        this.set('update');
+        this.restoring = true;
+        setTimeout(() => this.nag({ app: 'Windows Update', title: 'We restored Windows for you', body: 'An unrecognised operating system was found on your PC. Don’t worry, we fixed it.', yes: 'Thanks?', no: 'NO' }), 24000);
+      }
     }
     this.acc += dt;
     if (this.acc > 1 / 12) { this.acc = 0; this.draw(); }
@@ -136,6 +149,7 @@ export class WinPC {
     if (this.state === 'bsod') drawBSOD(x, W, H, this);
     else if (this.state === 'update') drawUpdate(x, W, H, this);
     else if (this.state === 'boot') drawBoot(x, W, H, this);
+    else if (this.state === 'linux') drawLinux(x, W, H, this);
     else this.drawDesktop(x);
     x.restore();
     this.texture.needsUpdate = true;
@@ -283,6 +297,27 @@ export function drawUpdate(x, w, h, pc) {
   x.fillStyle = 'rgba(255,255,255,0.7)';
   x.fillText('Your PC will restart several times', w / 2, h * 0.9);
   x.textAlign = 'left';
+}
+
+const LINUX = ['kuma@thinkpad:~$ uname -a', 'Linux thinkpad 6.11.0-kuma #1 SMP PREEMPT x86_64 GNU/Linux', 'kuma@thinkpad:~$ uptime', ' 14:02:11 up 3 min,  1 user,  load average: 0.01, 0.02, 0.00', 'kuma@thinkpad:~$ # no updates. no pop-ups. no Copilot.',
+  'kuma@thinkpad:~$ # just silence.', 'kuma@thinkpad:~$ cowsay "peace at last"', ' _______________', '< peace at last >', ' ---------------', '        \\   ^__^', '         \\  (oo)\\_______', '            (__)\\       )\\/\\', 'kuma@thinkpad:~$ cd agent && make', 'gcc -O2 -o agent main.c', 'Build succeeded. First try.', 'kuma@thinkpad:~$ '];
+export function drawLinux(x, w, h, pc) {
+  x.fillStyle = '#300a24';
+  x.fillRect(0, 0, w, h);
+  const s = w / 1024;
+  x.fillStyle = '#2c2c2c';
+  x.fillRect(0, 0, w, 26 * s);
+  x.fillStyle = '#ddd';
+  x.font = `${13 * s}px ${UI}`;
+  x.fillText('Activities          Terminal', 10 * s, 18 * s);
+  x.font = `${16 * s}px ${MONO}`;
+  let left = Math.floor(pc.typed / 2);
+  LINUX.forEach((ln, i) => {
+    if (left <= 0) return;
+    x.fillStyle = ln.startsWith('kuma@') ? '#8ae234' : '#eeeeec';
+    x.fillText(ln.slice(0, left), 18 * s, (56 + i * 26) * s);
+    left -= ln.length;
+  });
 }
 
 export function drawBoot(x, w, h, pc) {

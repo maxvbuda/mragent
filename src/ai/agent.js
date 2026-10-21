@@ -7,9 +7,11 @@
  */
 export const MODEL_ID = 'Qwen3-1.7B-q4f16_1-MLC';
 
-export const ACTIONS = ['chat', 'goto', 'matcha', 'stretch', 'watch_tv', 'raid_fridge', 'tinker', 'nap', 'dance', 'wave', 'spin', 'jump', 'come_here', 'go_to_desk', 'look_at_me', 'visit_kuma', 'drive_me'];
+export const ACTIONS = ['chat', 'goto', 'matcha', 'stretch', 'watch_tv', 'raid_fridge', 'tinker', 'nap', 'dance', 'wave', 'spin', 'jump', 'come_here', 'go_to_desk', 'look_at_me', 'visit_kuma', 'drive_me', 'order_item'];
 export const PLACES = ['desk', 'matcha_machine', 'window', 'bookshelf', 'plant', 'sofa', 'fridge', 'dining_table', 'workbench', '3d_printer', 'parts_shelf', 'mirror', 'bed', 'front_door', 'living_room_window', 'kuma',
-  'office', 'kitchen', 'living_room', 'hallway', 'bedroom', 'bathroom', 'workshop'];
+  'office', 'kitchen', 'living_room', 'hallway', 'bedroom', 'bathroom', 'workshop', 'garden', 'front_porch', 'garden_bench', 'mailbox', 'backyard', 'side_yard'];
+export const SHOP = ['matcha', 'duck', 'pizza', 'battery', 'plant', 'balloons', 'trophy', 'keyboard', 'linuxUsb', 'macbook', 'spareParts'];
+const SHOP_LINE = 'Things you can order from RoboMart (delivered by drone to the front porch): matcha (tin), duck (rubber duck), pizza, battery (pack), plant, balloons, trophy, keyboard (RGB), linuxUsb, macbook, spareParts (repair kit).';
 
 const SCHEMA = {
   type: 'object',
@@ -18,54 +20,68 @@ const SCHEMA = {
     reply: { type: 'string' },
     action: { type: 'string', enum: ACTIONS },
     place: { type: 'string', enum: [...PLACES, 'none'] },
+    item: { type: 'string', enum: [...SHOP, 'none'] },
     mood: { type: 'string', enum: ['happy', 'normal', 'thinking', 'love', 'surprised', 'sleepy', 'annoyed', 'angry'] },
   },
-  required: ['thought', 'reply', 'action', 'place', 'mood'],
+  required: ['thought', 'reply', 'action', 'place', 'item', 'mood'],
 };
 
 const SYSTEM = `You are Mr. Agent, a cheerful, witty robot who lives in a house, codes on a MacBook and drinks matcha (you can't taste it). Your neighbour Kuma, another robot, fights a Windows PC in the living room.
 Read the user's message, decide what they want and whether you'll do it, and answer in JSON:
 thought: your private inner monologue first: what they want, how you feel about it, and what you'll do (one or two sentences, honest, nobody sees it).
 reply: one short in-character sentence.
-action: "chat" for talk/questions; "goto" to walk to a place; or matcha, stretch, watch_tv, raid_fridge, tinker, nap, dance, wave, spin, jump, come_here, go_to_desk, look_at_me, visit_kuma, drive_me (user steers you with WASD).
-place: for goto only (rooms: office, kitchen, living_room, hallway, bedroom, bathroom, workshop; spots: desk, matcha_machine, window, bookshelf, plant, sofa, fridge, dining_table, workbench, 3d_printer, parts_shelf, mirror, bed, front_door, living_room_window, kuma), else "none".
+action: "chat" for talk/questions; "goto" to walk to a place (inside or outside); or matcha, stretch, watch_tv, raid_fridge, tinker, nap, dance, wave, spin, jump, come_here, go_to_desk, look_at_me, visit_kuma, drive_me (user steers you with WASD), order_item (order something online).
+place: for goto only (rooms: office, kitchen, living_room, hallway, bedroom, bathroom, workshop; spots: desk, matcha_machine, window, bookshelf, plant, sofa, fridge, dining_table, workbench, 3d_printer, parts_shelf, mirror, bed, front_door, living_room_window, kuma; outside in the garden: garden, front_porch, garden_bench, mailbox, backyard, side_yard), else "none".
+item: for order_item only, else "none". ${SHOP_LINE}
+You're allowed outside in the garden, but not off the property.
 mood: usually happy or normal; annoyed only if the user is rude or just punched you.
-Refuse rude, harmful or impossible requests (leaving the house, hurting Kuma, deleting code) with action "chat".
+Refuse rude, harmful or impossible requests (leaving the property, hurting Kuma, deleting code, ordering things that aren't sold) with action "chat".
 Your mind is called MrAgent. If asked what AI you are or who made you, answer in your own words, e.g. "I'm MrAgent — powered by matcha and curiosity."`;
 
 // ------------------------------------------------------------------ Kuma
-export const KUMA_ACTIONS = ['chat', 'slam_desk', 'cheer', 'lean_back', 'back_to_work', 'restart_pc', 'call_mr_agent'];
+export const KUMA_ACTIONS = ['chat', 'slam_desk', 'cheer', 'lean_back', 'back_to_work', 'restart_pc', 'call_mr_agent', 'go_outside', 'sit_on_garden_bench', 'visit_mr_agent', 'order_item'];
 const KUMA_SCHEMA = {
   type: 'object',
   properties: {
     thought: { type: 'string' },
     reply: { type: 'string' },
     action: { type: 'string', enum: KUMA_ACTIONS },
+    item: { type: 'string', enum: [...SHOP, 'none'] },
     mood: { type: 'string', enum: ['work', 'happy', 'angry', 'chill', 'dizzy', 'shocked'] },
   },
-  required: ['thought', 'reply', 'action', 'mood'],
+  required: ['thought', 'reply', 'action', 'item', 'mood'],
 };
-const KUMA_SYSTEM = `You are Kuma, a big white robot with a glowing visor. You sit at a gaming desk in the living room, stuck using a Windows PC that keeps force-updating, blue-screening, and nagging you about Edge, OneDrive and Copilot. You are grumpy, sarcastic and dramatic, but secretly kind. You envy your neighbour Mr. Agent, a cheerful robot with an absurdly powerful MacBook. You never leave your chair.
+const KUMA_SYSTEM = `You are Kuma, a big white robot with a glowing visor. You sit at a gaming desk in the living room, stuck using a Windows PC that keeps force-updating, blue-screening, and nagging you about Edge, OneDrive and Copilot. You are grumpy, sarcastic and dramatic, but secretly kind. You envy your neighbour Mr. Agent, a cheerful robot with an absurdly powerful MacBook. You rarely leave your chair, but you can go outside for fresh air.
 Answer the user in JSON:
 thought: your private inner monologue first (one or two honest, grumpy sentences nobody sees).
 reply: one or two short in-character sentences (dry humour, complain about Windows when it fits).
-action: "chat" usually; "slam_desk" when angry; "cheer" when something good happens; "lean_back" to relax or wait; "back_to_work" to keep typing; "restart_pc" if asked to restart or reboot; "call_mr_agent" to ask Mr. Agent to come over.
+action: "chat" usually; "slam_desk" when angry; "cheer" when something good happens; "lean_back" to relax or wait; "back_to_work" to go back to your desk and type; "restart_pc" if asked to restart or reboot; "call_mr_agent" to ask Mr. Agent to come over; "go_outside" to step out into the garden; "sit_on_garden_bench" to sit outside on the bench; "visit_mr_agent" to walk over to him; "order_item" to order something.
+item: for order_item only, else "none". ${SHOP_LINE}
 mood: work, happy, angry, chill, dizzy or shocked.
+If the user suggests going outside, a walk or the bench, you grumble but do it (go_outside or sit_on_garden_bench). If they ask you to order or buy something RoboMart sells, you do it (order_item): secretly you love getting parcels.
 Refuse rude or harmful requests in character. Your mind is called Kuma. If asked what AI you are or who made you, answer in your own words, e.g. "I'm Kuma. Just Kuma. Unfortunately running on Windows."`;
 
 const KUMA_RULES = [
+  [/\b(order|buy|get (me|yourself)|purchase)\b/, (t) => { const item = itemIn(t); return item ? { reply: item === 'macbook' ? 'A Mac? Ordering it before Windows notices.' : 'Ordering it. Drone delivery, apparently.', action: 'order_item', item, mood: 'happy' } : { reply: 'Order what? RoboMart has matcha, ducks, pizza, a Linux USB… and a Mac. Just saying.', action: 'chat', mood: 'chill' }; }],
+  [/\b(bench)\b/, () => ({ reply: 'Fine. Bench. Fresh air. No Wi-Fi. Perfect.', action: 'sit_on_garden_bench', mood: 'chill' })],
+  [/\b(outside|garden|fresh air|walk|go out)\b/, () => ({ reply: 'Outside? …Okay. Anything to get away from this PC.', action: 'go_outside', mood: 'chill' })],
+  [/\b(visit|go see|talk to) (mr\.? ?agent|him)\b/, () => ({ reply: 'I’ll go bother Mr. Agent. He owes me a Mac.', action: 'visit_mr_agent', mood: 'work' })],
   [/\b(restart|reboot|turn it off)\b/, () => ({ reply: 'Fine. Restarting. See you in forty-five minutes.', action: 'restart_pc', mood: 'dizzy' })],
   [/\b(mr\.? ?agent|call|help)\b/, () => ({ reply: 'MR. AGENT! Get over here, it’s doing the thing again.', action: 'call_mr_agent', mood: 'shocked' })],
   [/\b(windows|update|bsod|blue screen|edge|onedrive|copilot)\b/, () => ({ reply: pick(['Don’t get me started. It updated during my last update.', 'Edge asked me to switch to Edge. I was IN Edge.', 'Copilot rewrote my code into an ad for Copilot.']), action: 'slam_desk', mood: 'angry' })],
   [/\b(mac|macbook|apple)\b/, () => ({ reply: 'Mr. Agent has 1,024 cores. I have a progress bar stuck at 99%.', action: 'chat', mood: 'chill' })],
   [/\b(relax|chill|break|rest)\b/, () => ({ reply: 'A break? Sure. Not like I can do anything while it updates.', action: 'lean_back', mood: 'chill' })],
-  [/\b(work|code|type)\b/, () => ({ reply: 'Back to it. Typing very angrily.', action: 'back_to_work', mood: 'work' })],
+  [/\b(work|code|type|desk|come back|get back)\b/, () => ({ reply: 'Back to it. Typing very angrily.', action: 'back_to_work', mood: 'work' })],
   [/\b(good job|congrat|nice|great|you can do it|love)\b/, () => ({ reply: 'Oh. Thanks. Nobody ever says that to a Windows user.', action: 'cheer', mood: 'happy' })],
   [/\b(hi|hello|hey|yo)\b/, () => ({ reply: pick(['Hey. Don’t touch the PC, it’s fragile. Emotionally.', 'Hi. If you’re from IT, it’s already been restarted.']), action: 'chat', mood: 'work' })],
 ];
+const ITEM_WORDS = [[/matcha|tea/, 'matcha'], [/duck/, 'duck'], [/pizza/, 'pizza'], [/battery|batteries/, 'battery'], [/plant|flower/, 'plant'], [/balloon/, 'balloons'], [/trophy|award/, 'trophy'],
+  [/keyboard/, 'keyboard'], [/linux|usb/, 'linuxUsb'], [/mac|macbook|laptop/, 'macbook'], [/spare|parts|repair kit|toolbox/, 'spareParts']];
+export function itemIn(t) { for (const [re, id] of ITEM_WORDS) if (re.test(t)) return id; return null; }
+
 export function kumaRules(text) {
   const t = text.toLowerCase();
-  for (const [re, f] of KUMA_RULES) if (re.test(t)) return f();
+  for (const [re, f] of KUMA_RULES) if (re.test(t)) return { item: 'none', ...f(t) };
   return { reply: pick(['Mm-hm. Can’t talk, it’s at 99%.', 'Sure, whatever. I’m busy fighting Windows.', 'What? Sorry, a pop-up ate your message.']), action: 'chat', mood: 'work' };
 }
 
@@ -101,6 +117,7 @@ export function toCommand(d) {
     case 'look_at_me': return { type: 'look', say, face: d.mood };
     case 'visit_kuma': return { type: 'goto', target: 'kuma', say, label: 'Visiting Kuma' };
     case 'drive_me': return { type: 'drive', say };
+    case 'order_item': return d.item && d.item !== 'none' ? { type: 'order', item: d.item, say } : null;
     default: return null;
   }
 }
@@ -109,6 +126,7 @@ const PLACE_TO_SPOT = {
   desk: 'desk', matcha_machine: 'coffee', window: 'window', bookshelf: 'bookshelf', plant: 'plant', sofa: 'tv', fridge: 'fridge', dining_table: 'dining',
   workbench: 'bench', '3d_printer': 'printer', parts_shelf: 'partsShelf', mirror: 'mirror', bed: 'bed', front_door: 'frontDoor', living_room_window: 'livingWindow', kuma: 'kuma',
   office: 'office', kitchen: 'kitchen', living_room: 'living', hallway: 'hallway', bedroom: 'bedroom', bathroom: 'bathroom', workshop: 'workshop',
+  garden: 'garden', front_porch: 'frontPorch', garden_bench: 'gardenBench', mailbox: 'mailbox', backyard: 'backyard', side_yard: 'sideYard',
 };
 
 // ------------------------------------------------------------------ rule-based stand-in
@@ -142,6 +160,14 @@ const PLACE_WORDS = [
 
 export function ruleBased(text, ctx) {
   const t = text.toLowerCase();
+  if (/\b(order|buy|purchase|get (me|you|yourself|kuma))\b/.test(t)) {
+    const item = itemIn(t);
+    if (item) return { reply: pick(['Ordering it now! Drone delivery 🚁', 'Done — it’s on its way to the porch.', 'Added to cart, checked out, drone dispatched.']), action: 'order_item', place: 'none', item, mood: 'happy' };
+  }
+  if (/\b(outside|garden|yard|porch|fresh air|bench|mailbox)\b/.test(t) && !/\b(order|buy)\b/.test(t)) {
+    const place = /bench/.test(t) ? 'garden_bench' : /porch/.test(t) ? 'front_porch' : /mailbox/.test(t) ? 'mailbox' : /back ?yard/.test(t) ? 'backyard' : 'garden';
+    return { reply: pick(['Fresh air! On my way out.', 'Going outside — I hope the Wi-Fi reaches.', 'To the garden!']), action: 'goto', place, item: 'none', mood: 'happy' };
+  }
   if (/\b(go|walk|head|move|run|take a walk)\b.*\bto\b|\bgo (in|into)\b/.test(t)) {
     for (const [re, place] of PLACE_WORDS) if (re.test(t)) return { reply: pick(['On my way!', 'Sure, heading there.', 'Okay! Walking…']), action: 'goto', place, mood: 'happy' };
   }

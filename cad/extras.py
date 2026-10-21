@@ -143,3 +143,94 @@ for i in range(26):
     nodes.append(sphere(4.5, (sx * 27 + sx * 52 * abs(math.cos(b) * math.cos(a)), BRAIN_C[1] + 70 * math.cos(b) * math.sin(a), BRAIN_C[2] + 52 * math.sin(b))))
 parts["brainNodes"] = comp(*nodes)
 layout["brain"] = {"centre": T(BRAIN_C[0], BRAIN_C[1], BRAIN_C[2])}
+
+# ======================================================================= OUTSIDE: porch, bench, mailbox
+G = -0.3  # garden ground level (the house stands on a 0.3 m plinth)
+# porch steps down from the front door (origin on the ground at the plinth edge, steps run along +X)
+parts["porchSteps"] = comp(box(420, 1700, 200, (210, 0, 100)), box(840, 1700, 100, (420, 0, 50)))
+parts["porchMat"] = rbox(700, 1000, 8, 3, (-350, 0, 304))
+# garden bench (front = +Y, seat top at 450)
+slats = [rbox(1500, 80, 30, 8, (0, 170 - i * 95, 435)) for i in range(4)]
+backs = [rbox(1500, 30, 80, 8, (0, -210, 560 + i * 110)) for i in range(3)]
+parts["benchWood"] = comp(*slats, *backs)
+parts["benchIron"] = comp(*[comp(box(40, 460, 40, (sx * 690, 0, 400)), box(40, 40, 420, (sx * 690, 200, 210)), box(40, 40, 840, (sx * 690, -200, 420)),
+                                rbox(60, 380, 40, 15, (sx * 690, 20, 640))) for sx in (1, -1)])
+# mailbox on a post
+parts["mailboxPost"] = comp(box(90, 90, 1050, (0, 0, 525)))
+parts["mailboxBox"] = comp(rbox(240, 460, 220, 20, (0, 0, 1150)), cyl(120, 460, (0, -230, 1240), (0, 1, 0)))
+parts["mailboxFlag"] = comp(box(14, 14, 220, (140, 60, 1250)), box(14, 120, 70, (140, 120, 1325)))
+
+# ======================================================================= DELIVERIES
+# delivery drone (origin at its centre)
+parts["droneBody"] = comp(rbox(300, 300, 110, 40, (0, 0, 0)), ellipsoid(110, 110, 50, (0, 0, 60)))
+arms = []
+for i in range(4):
+    a = math.radians(45 + 90 * i)
+    arms.append(capsule_between((0, 0, 0), (290 * math.cos(a), 290 * math.sin(a), 20), 16))
+parts["droneArms"] = comp(*arms, *[cyl(30, 60, (290 * math.cos(math.radians(45 + 90 * i)), 290 * math.sin(math.radians(45 + 90 * i)), -10)) for i in range(4)])
+parts["droneRotor"] = comp(box(260, 22, 4, (0, 0, 0)), box(22, 260, 4, (0, 0, 0)), cyl(14, 16, (0, 0, -8)))
+layout["droneRotors"] = [[0.29 * math.cos(math.radians(45 + 90 * i)), 0.055, -0.29 * math.sin(math.radians(45 + 90 * i))] for i in range(4)]
+parts["droneLegs"] = comp(*[box(16, 16, 140, (sx * 110, sy * 110, -110)) for sx in (1, -1) for sy in (1, -1)], *[box(16, 300, 16, (sx * 110, 0, -180)) for sx in (1, -1)])
+parts["droneLights"] = comp(sphere(14, (0, 160, 0)), *[sphere(10, (290 * math.cos(math.radians(45 + 90 * i)), 290 * math.sin(math.radians(45 + 90 * i)), 30)) for i in range(4)])
+# parcel (origin at the bottom centre; the lid flaps hinge on the top edges)
+parts["parcel"] = rbox(360, 280, 260, 6, (0, 0, 130))
+parts["parcelTape"] = comp(box(364, 60, 4, (0, 0, 262)), box(60, 284, 4, (0, 0, 262)), box(364, 6, 262, (0, 141, 131)))
+parts["parcelLabel"] = box(130, 4, 90, (90, 142, 150))
+parts["parcelFlap"] = box(360, 140, 6, (0, -70, 0))  # hinge along its own x axis, at y = 0
+layout["parcel"] = {"size": [0.36, 0.26, 0.28]}
+
+# ---- things you can order (each modelled around its base)
+parts["duckBody"] = comp(ellipsoid(70, 90, 55, (0, 0, 55)), ellipsoid(45, 45, 45, (0, 45, 135)))
+parts["duckBeak"] = ellipsoid(22, 28, 10, (0, 92, 130))
+parts["duckEyes"] = comp(sphere(7, (20, 80, 150)), sphere(7, (-20, 80, 150)))
+parts["tinBody"] = cyl(45, 120, (0, 0, 0))
+parts["tinLid"] = comp(cyl(47, 25, (0, 0, 115)), cyl(20, 8, (0, 0, 140)))
+parts["tinLabel"] = cyl(46, 50, (0, 0, 35))
+parts["pizzaBox"] = rbox(330, 330, 45, 4, (0, 0, 22.5))
+parts["pizzaTop"] = comp(cyl(120, 2, (0, 0, 45)), *[cyl(14, 3, (60 * math.cos(i * 1.3), 60 * math.sin(i * 1.3), 46)) for i in range(6)])
+parts["usbBody"] = rbox(70, 22, 12, 4, (0, 0, 6))
+parts["usbPlug"] = box(26, 14, 9, (48, 0, 6))
+parts["batteryPack"] = rbox(140, 80, 200, 12, (0, 0, 100))
+parts["batteryPackTop"] = comp(cyl(14, 14, (35, 0, 200)), cyl(14, 14, (-35, 0, 200)), box(100, 82, 30, (0, 0, 130)))
+parts["trophyCup"] = comp(Part.makeCone(30, 75, 110, V(0, 0, 120), V(0, 0, 1)), torus(30, 6, (78, 0, 190), (0, 1, 0)), torus(30, 6, (-78, 0, 190), (0, 1, 0)), cyl(10, 70, (0, 0, 50)))
+parts["trophyBase"] = comp(rbox(120, 120, 50, 8, (0, 0, 25)))
+balloons = []
+strings = []
+for i, (bx, by, bz) in enumerate(((0, 0, 1150), (160, 60, 1050), (-150, -40, 1000))):
+    balloons.append(ellipsoid(110, 110, 140, (bx, by, bz)))
+    strings.append(tube([(0, 0, 40), (bx * 0.5, by * 0.5, (bz - 140) * 0.55), (bx, by, bz - 140)], 2.5))
+parts["balloons"] = comp(*balloons)
+parts["balloonStrings"] = comp(*strings, cyl(35, 40, (0, 0, 0)))
+parts["sparePartsBox"] = comp(rbox(300, 200, 140, 10, (0, 0, 70)), box(120, 30, 20, (0, 0, 150)))
+
+layout["shop"] = {
+    "porchDrop": [10.3, G, -3.2],
+}
+
+# ======================================================================= garden placement
+for it in house["furniture"]:
+    if it["name"] == "stones":  # lay them on the ground, running out from the front door steps
+        it["pos"] = [9.95, G, -3.2]
+        it["rot"] = 0
+house["furniture"] += [
+    {"name": "porchSteps", "pos": [8.8, G, -3.2], "rot": 0, "scale": 1, "solid": False, "tag": None, "parts": [["porchSteps", "stone"]]},
+    {"name": "porchMat", "pos": [8.8, G, -3.2], "rot": 0, "scale": 1, "solid": False, "tag": None, "parts": [["porchMat", "rug"]]},
+    {"name": "gardenBench", "pos": [12.4, G, -0.6], "rot": math.pi / 2, "scale": 1, "solid": False, "tag": "gardenBench", "parts": [["benchWood", "wood"], ["benchIron", "steelDark"]]},
+    {"name": "mailbox", "pos": [12.6, G, -4.35], "rot": math.pi / 2, "scale": 1, "solid": False, "tag": "mailbox", "parts": [["mailboxPost", "woodDark"], ["mailboxBox", "red"], ["mailboxFlag", "steel"]]},
+]
+house["obstacles"] += [[12.15, -1.4, 12.65, 0.2], [12.5, -4.5, 12.7, -4.2]]
+# tree trunks block the way (the canopies don't)
+for it in house["furniture"]:
+    if it["name"].startswith("tree"):
+        x, z = it["pos"][0], it["pos"][2]
+        house["obstacles"].append([x - 0.25, z - 0.25, x + 0.25, z + 0.25])
+house["outside"] = {"ground": G, "plinth": 0.3, "bounds": [-13.5, -12.5, 14.5, 8.5], "door": [8.5, -3.2]}
+house["spots"].update({
+    "frontPorch": spot(10.05, -3.2, -math.pi / 2),
+    "pickup": spot(9.75, -3.2, -math.pi / 2),
+    "gardenBench": spot(12.12, -0.6, math.pi / 2, seat=0.45),
+    "mailbox": spot(11.95, -4.35, -math.pi / 2),
+    "garden": spot(11.0, 2.3, -math.pi / 2),
+    "backyard": spot(0.0, 5.6, math.pi),
+    "sideYard": spot(-11.2, -3.0, math.pi / 2),
+})

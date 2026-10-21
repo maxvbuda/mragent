@@ -2,8 +2,8 @@ import * as THREE from 'three';
 
 /** Grid A* over the room floor, with furniture inflated by the robot's radius. */
 export class NavGrid {
-  constructor(layout, { cell = 0.08, radius = 0.27, extra = [] } = {}) {
-    const [x0, z0, x1, z1] = layout.house ? layout.house.bounds : [layout.room.left, -1.75, layout.room.right, layout.room.back];
+  constructor(layout, { cell = 0.08, radius = 0.27, extra = [], bounds = null } = {}) {
+    const [x0, z0, x1, z1] = bounds || (layout.house ? layout.house.bounds : [layout.room.left, -1.75, layout.room.right, layout.room.back]);
     this.cell = cell;
     this.radius = radius;
     this.minX = x0;

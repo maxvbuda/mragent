@@ -24,18 +24,34 @@ const _qa = new THREE.Quaternion(), _qb = new THREE.Quaternion(), _qc = new THRE
 const _pole = new THREE.Vector3(), _pb = new THREE.Vector3();
 
 export class Kuma {
-  constructor(scene, layout, { say } = {}) {
+  constructor(scene, layout, { say, nav = null, groundY = () => 0, spots = {} } = {}) {
     const K = layout.kuma;
     this.say = say || (() => {});
+    Object.assign(this, { nav, groundY, spots, scene });
+    // `base` is his chair (it stays put); `mover` is Kuma himself and goes wherever he walks
     this.base = new THREE.Group();
-    this.base.name = 'kuma';
+    this.base.name = 'kuma-chair';
     this.base.position.fromArray(K.chair);
+    scene.add(this.base);
+    this.mover = new THREE.Group();
+    this.mover.name = 'kuma';
+    this.mover.position.fromArray(K.chair);
     this.seat = new THREE.Group();
     this.seat.position.y = K.seat;
-    this.base.add(this.seat);
+    this.mover.add(this.seat);
     this.robot = new Robot();
     this.seat.add(this.robot.root);
-    scene.add(this.base);
+    scene.add(this.mover);
+    // standing / walking
+    this.stand = 0;          // 0 seated at the desk .. 1 standing
+    this.gait = 0;           // 0 still .. 1 walking
+    this.phase = 0;
+    this.carry = 0;          // 0 .. 1 holding a parcel in front of him
+    this.crouch = 0;         // bending down to pick something up
+    this.seatedAt = 'desk';  // 'desk' | spot name | null (standing)
+    this.tasks = new Set();
+    this.speed = 0;
+    this.hipDrop = null;
     this.robot.root.traverse((o) => { if (o.isMesh) o.userData.kuma = true; });
     this.meshes = [];
     this.robot.root.traverse((o) => { if (o.isMesh) this.meshes.push(o); });
@@ -80,11 +96,12 @@ export class Kuma {
       this.say(pick(lines));
       if (Math.random() < 0.5) this.slam();
     }
+    else if (event === 'linux') { this.state = 'type'; this.cheer = 0; this.setMood('happy'); this.say(pick(['Linux. Sweet, sweet Linux.', 'No updates. No pop-ups. I could cry.', 'Is this what peace feels like?'])); }
     else if (event === 'win') { this.cheer = 0; this.setMood('happy'); this.say(pick(['It… compiled? On Windows?', 'IT WORKS!', 'Booted in under five minutes!'])); }
     else { this.state = 'type'; this.setMood('work'); }
   }
 
-  slam() { if (this.rage < 0) this.rage = 0; }
+  slam() { if (this.rage < 0 && this.atDesk) this.rage = 0; }
 
   /** Something his AI decided to do. */
   act(action, mood) {
@@ -116,9 +133,159 @@ export class Kuma {
     this.say(pick(['What did you DO to it?', 'Thanks… I think?', 'Why is Candy Crush open?']));
   }
 
+  // ------------------------------------------------------------ a tiny scheduler for walking about
+  frame(fn) { return new Promise((resolve) => this.tasks.add({ fn, resolve })); }
+  wait(s) { return this.frame((dt) => (s -= dt) <= 0); }
+  tween(dur, fn) { let t = 0; return this.frame((dt) => { t += dt; const k = Math.min(1, t / dur); fn(ease(k), k); return k >= 1; }); }
+
+  get busy() { return !!this.job; }
+  get atDesk() { return this.seatedAt === 'desk' && this.stand < 0.01; }
+  forward(out = new THREE.Vector3()) { return out.set(Math.sin(this.mover.rotation.y), 0, Math.cos(this.mover.rotation.y)); }
+
+  /** Run one errand at a time (walk somewhere, fetch a parcel…). */
+  run(name, fn) {
+    // errands queue up behind each other
+    const go = async () => {
+      this.job = name;
+      try { await fn(); } catch (e) { console.error(e); } finally { this.job = null; }
+    };
+    this.chain = (this.chain || Promise.resolve()).then(go);
+    return this.chain;
+  }
+
+  standPoint() { return this.base.position.clone().add(new THREE.Vector3(-0.62, 0, -0.08)); }
+
+  async standUp() {
+    if (this.stand > 0.99) return;
+    const from = this.mover.position.clone(), to = this.seatedAt === 'desk' ? this.standPoint() : from.clone().addScaledVector(this.forward(), 0.3);
+    const h0 = this.mover.rotation.y, h1 = this.seatedAt === 'desk' ? -Math.PI / 2 : h0;
+    this.state = 'type';
+    await this.tween(1.3, (k) => {
+      this.stand = k;
+      this.mover.position.lerpVectors(from, to, k);
+      this.mover.rotation.y = lerp(h0, h1, k);
+    });
+    this.seatedAt = null;
+  }
+
+  async sitDown(where = 'desk') {
+    const spot = where === 'desk' ? null : this.spots[where];
+    const seatPos = where === 'desk' ? this.base.position.clone() : spot.pos.clone().addScaledVector(dirOf(spot.heading), -0.26);
+    const heading = where === 'desk' ? 0 : spot.heading + Math.PI;
+    const approach = where === 'desk' ? this.standPoint() : seatPos.clone().addScaledVector(new THREE.Vector3(Math.sin(heading), 0, Math.cos(heading)), 0.3);
+    await this.walkTo(approach);
+    const from = this.mover.position.clone(), h0 = this.mover.rotation.y;
+    let h1 = heading;
+    h1 = h0 + Math.atan2(Math.sin(h1 - h0), Math.cos(h1 - h0));
+    await this.tween(1.3, (k) => {
+      this.stand = 1 - k;
+      this.mover.position.lerpVectors(from, seatPos, k);
+      this.mover.rotation.y = lerp(h0, h1, k);
+    });
+    this.seatOffset = where === 'desk' ? 0 : (spot.seat ?? 0.45) - 0.46;
+    this.seatedAt = where;
+    if (where !== 'desk') { this.state = 'wait'; this.setMood('chill'); } // lounging
+  }
+
+  /** Walk along a path from the nav grid to `to` (a Vector3 on the floor). */
+  async walkTo(to) {
+    const pts = this.nav ? this.nav.find(this.mover.position.clone().setY(0), to.clone().setY(0)).slice(1) : [to];
+    for (const p of pts) {
+      await this.frame((dt) => {
+        const pos = this.mover.position;
+        const d = Math.hypot(p.x - pos.x, p.z - pos.z);
+        if (d < 0.03) { pos.x = p.x; pos.z = p.z; return true; }
+        const want = Math.atan2(p.x - pos.x, p.z - pos.z);
+        const dh = Math.atan2(Math.sin(want - this.mover.rotation.y), Math.cos(want - this.mover.rotation.y));
+        this.mover.rotation.y += dh * (1 - Math.exp(-dt * 6));
+        const sp = 0.7 * Math.max(0.1, Math.cos(dh));
+        const step = Math.min(d, sp * dt);
+        pos.x += ((p.x - pos.x) / d) * step;
+        pos.z += ((p.z - pos.z) / d) * step;
+        this.speed = sp;
+        return false;
+      });
+    }
+    this.speed = 0;
+  }
+
+  async turnTo(h) {
+    const h0 = this.mover.rotation.y;
+    const h1 = h0 + Math.atan2(Math.sin(h - h0), Math.cos(h - h0));
+    await this.tween(0.6, (k) => { this.mover.rotation.y = lerp(h0, h1, k); });
+  }
+
+  /** Go somewhere by name (a spot shared with Mr. Agent) and maybe sit there. */
+  goTo(name) {
+    return this.run(`going to ${name}`, async () => {
+      const spot = this.spots[name];
+      if (!spot) return;
+      if (this.seatedAt) await this.standUp();
+      if (spot.seat) await this.sitDown(name);
+      else { await this.walkTo(spot.pos); await this.turnTo(spot.heading + Math.PI); }
+      // after a while out there, Windows calls him back
+      clearTimeout(this.returnTimer);
+      this.returnTimer = setTimeout(() => { if (!this.job && this.seatedAt !== 'desk') { this.say(pick(['Fresh air: done. Back to the suffering.', 'I should check if it finished updating.'])); this.backToDesk(); } }, 45000);
+    });
+  }
+
+  /** Walk over to a point and face `lookAt`. */
+  goToPoint(pos, lookAt) {
+    return this.run('walking over', async () => {
+      if (this.seatedAt) await this.standUp();
+      await this.walkTo(pos);
+      if (lookAt) await this.turnTo(Math.atan2(lookAt.x - this.mover.position.x, lookAt.z - this.mover.position.z));
+    });
+  }
+
+  backToDesk() {
+    return this.run('back to the desk', async () => {
+      if (this.seatedAt === 'desk') return;
+      if (this.seatedAt) await this.standUp();
+      await this.sitDown('desk');
+      this.state = 'type';
+      this.setMood('work');
+    });
+  }
+
+  /** Walk out to the porch, carry the parcel back and unbox it next to the desk. */
+  fetch(order, delivery) {
+    return this.run('fetching a parcel', async () => {
+      if (this.seatedAt) await this.standUp();
+      const box = delivery.parcelFor(order)?.g;
+      if (!box) return;
+      this.say(pick(['A parcel? For ME?', 'Finally, something that isn’t a Windows update.', 'Ooh, a delivery!']));
+      await this.walkTo(box.position.clone().addScaledVector(new THREE.Vector3(-1, 0, 0), 0.62));
+      await this.turnTo(Math.atan2(box.position.x - this.mover.position.x, box.position.z - this.mover.position.z));
+      await this.tween(0.7, (k) => { this.crouch = k; });
+      delivery.take(order);
+      this.mover.attach(box);
+      await this.tween(0.6, (k) => {
+        this.crouch = 1 - k;
+        this.carry = k;
+        box.position.lerp(new THREE.Vector3(0, 0.97, 0.42), k);
+        box.quaternion.slerp(new THREE.Quaternion(), k);
+      });
+      await this.walkTo(this.standPoint().add(new THREE.Vector3(0, 0, -0.55)));
+      await this.turnTo(Math.PI / 2);
+      await this.tween(0.7, (k) => { this.crouch = k; this.carry = 1 - k; box.position.y = lerp(0.97, 0.05, k); });
+      this.scene.attach(box);
+      box.position.y = this.groundY(box.position.x, box.position.z);
+      await this.tween(0.4, (k) => { this.crouch = 1 - k; });
+      await delivery.unbox(order, 'kuma', (dur, fn) => this.tween(dur, (e, k) => fn(k)));
+      await this.sitDown('desk');
+      this.state = 'type';
+    });
+  }
+
   update(dt, time) {
     this.t += dt;
     const R = this.robot;
+    for (const task of [...this.tasks]) if (task.fn(dt)) { this.tasks.delete(task); task.resolve(); }
+    if (this.stand > 0.001) this.mover.position.y = this.groundY(this.mover.position.x, this.mover.position.z) + (this.seatedAt && this.seatedAt !== 'desk' ? this.seatOffset * (1 - this.stand) : 0);
+    else this.mover.position.y = this.seatedAt && this.seatedAt !== 'desk' ? this.groundY(this.mover.position.x, this.mover.position.z) + this.seatOffset : this.base.position.y;
+    this.gait = damp(this.gait, this.speed > 0.05 ? 1 : 0, 6, dt);
+    if (this.gait > 0.01) this.phase = (this.phase + dt / 0.95) % 1;
 
     // ---- moods drift back to work
     if (this.rage >= 0) { this.rage += dt; if (this.rage > 1.9) { this.rage = -1; if (this.state === 'type') this.setMood('work'); } }
@@ -128,13 +295,13 @@ export class Kuma {
     mats.led.emissive.copy(this.colour);
 
     // ---- typing rhythm
-    const typing = this.state === 'type' && this.rage < 0 && this.cheer < 0;
+    const typing = this.state === 'type' && this.rage < 0 && this.cheer < 0 && this.atDesk;
     this.thinkT -= dt;
     if (this.thinkT < 0) { this.think = this.think > 0.5 ? 0 : 1; this.thinkT = this.think ? 1 + Math.random() * 1.5 : 3 + Math.random() * 5; }
     const think = this.thinkSm = damp(this.thinkSm || 0, this.think, 4, dt);
     this.nextKey -= dt;
     if (typing && think < 0.5 && this.nextKey <= 0) {
-      this.nextKey = 0.06 + Math.random() * 0.09;
+      this.nextKey = (0.06 + Math.random() * 0.09) * (this.typeBoost ? 0.55 : 1);
       const i = Math.random() < 0.5 ? 0 : 1;
       if (Math.random() < 0.12) this.thumb[i] = 1e-4;
       else this.press[i][Math.floor(Math.random() * 4)] = 1e-4;
@@ -167,7 +334,7 @@ export class Kuma {
       const shake = rt > 0.62 && rt < 1.4 ? 0.014 : 0;
       b.chestRoll += Math.sin(time * 47) * shake;
       b.headRoll += Math.sin(time * 53) * shake;
-      if (this.prevRage < 0.62 && rt >= 0.62 && this.onSlam) this.onSlam(this.base.localToWorld(new THREE.Vector3(0, 0.76, 0.3)));
+      if (this.prevRage < 0.62 && rt >= 0.62 && this.onSlam) this.onSlam(this.mover.localToWorld(new THREE.Vector3(0, 0.76, 0.3)));
     }
     this.prevRage = rt;
     if (this.cheer >= 0) {
@@ -176,12 +343,30 @@ export class Kuma {
       b.headPitch -= 0.3 * k;
       b.spineRoll += Math.sin(this.cheer * 9) * 0.04 * k;
     }
+    // standing up / walking / bending down
+    if (this.hipDrop === null) {
+      this.mover.updateMatrixWorld(true);
+      const root = R.root.getWorldPosition(new THREE.Vector3()), hip = R.legs[0].thigh.getWorldPosition(new THREE.Vector3());
+      this.hipDrop = root.y - hip.y;
+    }
+    const u = ease(this.stand);
+    if (u > 0.001) {
+      const g = this.gait, ph = this.phase;
+      const standY = 0.87 + this.hipDrop - 0.57 - this.crouch * 0.28 - 0.012 * g + 0.014 * g * Math.cos(ph * Math.PI * 4);
+      const st = { pelvisY: standY, pelvisZ: 0, pelvisPitch: 0, spinePitch: 0.02 + this.crouch * 0.35, spineYaw: 0.06 * g * Math.sin(ph * Math.PI * 2), spineRoll: 0.03 * g * Math.sin(ph * Math.PI * 2),
+        chestPitch: 0.02 + this.crouch * 0.25, chestYaw: -0.08 * g * Math.sin(ph * Math.PI * 2), chestRoll: 0, neckPitch: 0.04, neckYaw: 0, headPitch: 0.04 + this.crouch * 0.2, headYaw: 0, headRoll: 0 };
+      for (const k of KEYS) b[k] = lerp(b[k], st[k], u);
+    }
+    if (this.seatedAt && this.seatedAt !== 'desk') { b.spinePitch -= 0.12; b.chestPitch -= 0.08; b.headPitch -= 0.1; } // lounging on a bench
     R.applyBody(b);
+    this.mover.updateMatrixWorld(true);
     this.base.updateMatrixWorld(true);
 
     // ---- arms
     R.chest.getWorldQuaternion(_qc);
-    const origin = this.base.position;
+    const M = this.mover.matrixWorld;
+    const mq = this.mover.quaternion;
+    const u2 = ease(this.stand);
     for (let i = 0; i < 2; i++) {
       const s = R.arms[i].side;
       const taps = [0, 0, 0, 0];
@@ -230,7 +415,19 @@ export class Kuma {
         _qa.slerp(handQuat(_qb, _f.set(s * 0.2, 1, 0), _n.set(0, 0, 1)), k);
         _pole.lerp(_pb.set(s, -0.2, -0.3), k);
       }
-      target.add(origin);
+      _qa.premultiply(mq); // the poses above are built facing his desk; turn them with him
+      // standing: arms swing by his sides, or hold the parcel out in front
+      if (u2 > 0.001) {
+        const sw = 0.16 * this.gait * Math.cos((this.phase + (i ? 0.5 : 0)) * Math.PI * 2);
+        const rootY = 0.4 + 0.17 + b.pelvisY;
+        _b.set(s * 0.3, rootY + 0.06, sw).lerp(_c.set(s * 0.19, 1.1, 0.4), this.carry);
+        _b.y -= this.crouch * 0.2;
+        _qb.copy(handQuat(_qb, _f.set(0, -1, 0.15 + sw).lerp(_n.set(0, 0, 1), this.carry).normalize().applyQuaternion(mq), _n.set(-s, 0, 0).applyQuaternion(mq)));
+        target.lerp(_b, u2);
+        _qa.slerp(_qb, u2);
+        _pole.lerp(_pb.set(s * 0.6, -0.2, -0.8).applyQuaternion(mq), u2);
+      }
+      target.applyMatrix4(M);
       R.solveArm(i, target, _pole, _qa);
       const fist = Math.max(windK, slamK, this.cheer >= 0 ? 0.6 : 0);
       R.setFingers(i, {
@@ -243,13 +440,25 @@ export class Kuma {
     for (let i = 0; i < 2; i++) {
       const s = R.legs[i].side;
       const bounce = this.state === 'wait' && i === 0 ? Math.max(0, Math.sin(time * 9)) * 0.02 : 0;
-      _a.set(s * 0.13, 0.077 + bounce, 0.44).add(origin);
-      footQuat(_qa, _f.set(0, 0, 1), _n.set(0, 1, 0));
-      R.solveLeg(i, _a, _pole.set(s * 0.15, 0.4, 1).normalize(), _qa);
+      _a.set(s * 0.13, 0.077 + bounce, 0.44);
+      if (u2 > 0.001) {
+        // planted feet with a simple stepping gait (stride along his forward axis)
+        const p = (this.phase + i * 0.5) % 1, D = Math.min(0.4, this.speed * 0.95 * 0.5) * this.gait;
+        let off = 0, lift = 0;
+        if (p < 0.5) off = D * (0.5 - p / 0.5);
+        else { const t = (p - 0.5) / 0.5; off = D * (-0.5 + t * t * (3 - 2 * t)); lift = 0.08 * Math.sin(Math.PI * t) * this.gait; }
+        _a.lerp(_b.set(s * 0.12, 0.077 + lift, off + 0.02), u2);
+      }
+      _a.applyMatrix4(M);
+      if (this.seatedAt && this.seatedAt !== 'desk') _a.y = this.groundY(_a.x, _a.z) + 0.077; // feet on the ground, not the seat
+      footQuat(_qa, _f.set(0, 0, 1).applyQuaternion(mq), _n.set(0, 1, 0));
+      R.solveLeg(i, _a, _pole.set(s * 0.15, 0.4, 1).applyQuaternion(mq).normalize(), _qa);
     }
     R.update(dt, time, this.colour);
   }
 }
 
 function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+/** Mr. Agent's heading convention (0 = facing -z) to a direction. */
+function dirOf(h) { return new THREE.Vector3(-Math.sin(h), 0, -Math.cos(h)); }
 export { UP };

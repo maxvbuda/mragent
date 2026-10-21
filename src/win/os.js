@@ -1,5 +1,5 @@
 import { h, drag } from '../mac/ui.js';
-import { NAGS, drawBSOD, drawUpdate, drawBoot } from './pc.js';
+import { NAGS, drawBSOD, drawUpdate, drawBoot, drawLinux } from './pc.js';
 import './win.css';
 
 /**
@@ -250,6 +250,7 @@ export class WinOS {
       const x = ov.getContext('2d');
       if (st === 'bsod') drawBSOD(x, ov.width, ov.height, this.pc);
       else if (st === 'update') drawUpdate(x, ov.width, ov.height, this.pc);
+      else if (st === 'linux') drawLinux(x, ov.width, ov.height, this.pc);
       else drawBoot(x, ov.width, ov.height, this.pc);
     }
     for (const w of this.wins) w.tick?.(dt);

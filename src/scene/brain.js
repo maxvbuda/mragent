@@ -242,6 +242,7 @@ export class Brain {
           break;
         }
         case 'say': await this.idleHere(c.stay ?? (this.sitting ? 0 : 8)); break;
+        case 'fetch': await this.fetchParcel(c.order); break;
         case 'reboot': {
           const st = r.state;
           r.face.set('loading');
@@ -271,6 +272,53 @@ export class Brain {
     } finally {
       this.mode = 'life';
       if (c.type === 'drive') this.driving = false;
+    }
+  }
+
+  /** A parcel is on the porch: go out, pick it up, bring it in and unbox it next to the desk. */
+  async fetchParcel(o) {
+    const d = this.delivery, r = this.robot, st = r.state;
+    const p = d?.parcelFor(o);
+    if (!p || p.taken) return;
+    this.crit++; // don't drop the box halfway: new orders wait until he's done
+    try {
+      this.setActivity(`Fetching a parcel: ${o.item.emoji} ${o.item.name}`);
+      this.say(pick(['Ooh, a delivery! 📦', 'Was that the doorbell?', 'Parcel! Be right back.']), 2.2);
+      await this.getUp();
+      const box = p.g;
+      const stand = box.position.clone().setY(0).add(V(-0.58, 0, 0));
+      await this.walkTo({ pos: stand, heading: headingTo(stand, box.position) });
+      const w0 = st.waistY;
+      this.setArms('thighs');
+      await this.tween(0.6, (k) => { st.waistY = w0 - 0.22 * k; st.lean = 0.02 + 0.5 * k; });
+      d.take(o);
+      r.root.updateMatrixWorld(true);
+      r.torso.attach(box);
+      const p0 = box.position.clone(), q0 = box.quaternion.clone();
+      this.hand = [{ mode: 'hold', rate: 8 }, { mode: 'hold', rate: 8 }];
+      await this.tween(0.6, (k) => {
+        st.waistY = w0 - 0.22 * (1 - k); st.lean = 0.02 + 0.5 * (1 - k);
+        box.position.lerpVectors(p0, V(0, 0.06, -0.37), k);
+        box.quaternion.slerpQuaternions(q0, new THREE.Quaternion(), k);
+      });
+      this.setActivity(`Carrying ${o.item.emoji} inside`);
+      const home = V(1.25, 0, 0.35);
+      await this.walkTo({ pos: home, heading: 0 });
+      await this.tween(0.6, (k) => { st.waistY = w0 - 0.22 * k; st.lean = 0.02 + 0.5 * k; });
+      this.room.room.parent.attach(box);
+      box.position.set(home.x, 0, home.z - 0.5);
+      box.quaternion.identity();
+      this.hand = [{ mode: 'free' }, { mode: 'free' }];
+      this.setArms('rest');
+      await this.tween(0.5, (k) => { st.waistY = w0 - 0.22 * (1 - k); st.lean = 0.02 + 0.5 * (1 - k); });
+      this.setActivity(`Unboxing ${o.item.emoji} ${o.item.name}`);
+      r.lookAt(box.position.clone().add(V(0, 0.3, 0)), 1);
+      r.face.set('surprised', 1.2);
+      await d.unbox(o, 'agent', (dur, fn) => this.tween(dur, (e, k) => fn(k)));
+      r.lookAt(null);
+      r.face.set('happy', 2);
+    } finally {
+      this.crit--;
     }
   }
 
@@ -790,9 +838,9 @@ export class Brain {
       if (!sidestep) await this.turnTo(want, interruptible);
       await this.frame((dt) => {
         const pos = r.root.position;
-        const to = target.clone().sub(pos);
+        const to = target.clone().setY(pos.y).sub(pos); // the ground height is handled elsewhere
         const d = to.length();
-        if (d < 0.02) { pos.copy(target); return true; }
+        if (d < 0.02) { pos.x = target.x; pos.z = target.z; return true; }
         if (!sidestep) r.heading += wrap(headingTo(pos, target) - r.heading) * (1 - Math.exp(-dt * 6));
         const sp = sidestep ? Math.min(speed, 0.32) : speed;
         const step = Math.min(d, sp * dt * Math.min(1, 0.35 + d * 2));

@@ -146,6 +146,7 @@ export function buildHouse(scene, geos, layout, M, robotGeos, robotMats) {
     fridgeLight: mk({ color: 0xffffff, emissive: 0xeaf6ff, emissiveIntensity: 2.5 }),
     booksMix: mk({ color: 0x2e5a86, roughness: 0.8 }),
     towel: mk({ color: 0x7fb8c9, roughness: 1 }),
+    rug: mk({ color: 0x6b4f3a, roughness: 1 }),
     deskBlack: phys({ color: 0x15161a, roughness: 0.35, clearcoat: 0.5 }),
     smokedGlass: phys({ color: 0x0d1016, roughness: 0.05, transparent: true, opacity: 0.35, clearcoat: 1, depthWrite: false }),
     rgb: mk({ color: 0x000000, emissive: 0xff00ff, emissiveIntensity: 5 }),
@@ -456,6 +457,18 @@ export function buildHouse(scene, geos, layout, M, robotGeos, robotMats) {
   sky.frustumCulled = false;
   scene.add(sky);
   out.sky = { mesh: sky, uniforms: sky.material.uniforms };
+
+  // ------------------------------------------------------------ ground height: house on its plinth, garden 0.3 m lower
+  const O = H.outside || { ground: -0.3, plinth: 0.3 };
+  const px0 = bx0 - O.plinth, pz0 = bz0 - O.plinth, px1 = bx1 + O.plinth, pz1 = bz1 + O.plinth;
+  out.groundY = (x, z) => {
+    const dx = Math.max(px0 - x, 0, x - px1), dz = Math.max(pz0 - z, 0, z - pz1);
+    const d = Math.hypot(dx, dz);
+    if (d <= 0) return 0;
+    const t = Math.min(1, d / 0.85);
+    return O.ground * t * t * (3 - 2 * t); // the porch steps (and the plinth edge) ease you down
+  };
+  out.outdoors = (x, z) => x < bx0 || x > bx1 || z < bz0 || z > bz1;
 
   // ------------------------------------------------------------ per-frame: cutaway walls, doors, TV
   out.wallMode = 'cutaway';
