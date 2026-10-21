@@ -86,6 +86,18 @@ export class Kuma {
 
   slam() { if (this.rage < 0) this.rage = 0; }
 
+  /** Something his AI decided to do. */
+  act(action, mood) {
+    clearTimeout(this.actTimer);
+    if (mood) this.setMood(mood);
+    if (action === 'slam_desk') this.slam();
+    else if (action === 'cheer') this.cheer = 0;
+    else if (action === 'lean_back') { this.state = 'wait'; this.actTimer = setTimeout(() => { this.state = 'type'; this.setMood('work'); }, 9000); }
+    else if (action === 'back_to_work') { this.state = 'type'; this.setMood('work'); }
+    else if (action === 'restart_pc') { this.state = 'wait'; this.setMood('dizzy'); }
+    if (action !== 'lean_back' && action !== 'restart_pc') this.actTimer = setTimeout(() => { if (this.state === 'type' && this.rage < 0 && this.cheer < 0) this.setMood('work'); }, 4000);
+  }
+
   poke() {
     this.setMood(pick(['shocked', 'angry']));
     this.say(pick(['Not now, I’m fighting Windows.', 'Do you know how to turn off automatic updates? Anyone?', 'Mr. Agent has a Mac. Must be nice.', 'Shh. It’s at 99%. Don’t jinx it.', 'I’m Kuma. I used to have a nice laptop.']));

@@ -130,7 +130,7 @@ async function boot() {
     if (inMac) return;
     hover = pickAt(e);
     canvas.style.cursor = hover ? 'pointer' : '';
-    hud.tip((punchMode ? { robot: '🥊 Punch!', kuma: 'Kuma is off-limits' } : {})[hover] || { laptop: 'Use Mr. Agent’s Mac', windows: 'Use Kuma’s Windows PC (good luck)', kuma: 'Bother Kuma', robot: 'Say hi' }[hover] || null, e.clientX, e.clientY);
+    hud.tip((punchMode ? { robot: '🥊 Punch!', kuma: 'Kuma is off-limits' } : {})[hover] || { laptop: 'Use Mr. Agent’s Mac', windows: 'Use Kuma’s Windows PC (good luck)', kuma: 'Talk to Kuma', robot: 'Say hi' }[hover] || null, e.clientX, e.clientY);
   });
   canvas.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; audio.unlock(); });
   canvas.addEventListener('pointerup', (e) => {
@@ -138,7 +138,7 @@ async function boot() {
     const what = pickAt(e);
     if (what === 'laptop') enterMac();
     else if (what === 'windows') enterWin();
-    else if (what === 'kuma') { if (punchMode) { kuma.say(pick(['Don’t even think about it.', 'Touch me and I install Windows on you.', 'I’m already suffering enough!'])); kuma.slam(); } else kuma.poke(); }
+    else if (what === 'kuma') { if (punchMode) { kuma.say(pick(['Don’t even think about it.', 'Touch me and I install Windows on you.', 'I’m already suffering enough!'])); kuma.slam(); } else { kuma.poke(); toggleChat(true, 'kuma'); } }
     else if (what === 'robot') {
       if (punchMode) damage.punch(lastHit.point.clone(), ray.ray.direction.clone(), lastHit.object);
       else brain.wave();
@@ -299,61 +299,102 @@ async function boot() {
   window.addEventListener('keydown', (e) => { if (e.key === 'Shift') shiftHeld = true; });
   window.addEventListener('keyup', (e) => { if (e.key === 'Shift') shiftHeld = false; });
 
-  // ------------------------------------------------------------ chat
-  const chatEl = $('#chat'), chatLog = $('#chat-log'), chatInput = $('#chat-input');
-  function toggleChat(open = chatEl.hidden) {
+  // ------------------------------------------------------------ chat (Mr. Agent or Kuma)
+  const chatEl = $('#chat'), chatInput = $('#chat-input');
+  const logs = { agent: $('#chat-log'), kuma: $('#chat-log-kuma') };
+  const NAMES = { agent: 'MrAgent', kuma: 'Kuma' };
+  let talkTo = 'agent';
+  const GREET = {
+    agent: 'Hi! Tell me what to do — “go to the kitchen”, “make some matcha”, “visit Kuma”, “dance”… I’ll think about it.',
+    kuma: 'What. I’m busy. Windows is “getting things ready”. Again.',
+  };
+  function setTalkTo(who) {
+    talkTo = who;
+    document.querySelectorAll('#chat-tabs button').forEach((b) => b.classList.toggle('on', b.dataset.who === who));
+    logs.agent.hidden = who !== 'agent';
+    logs.kuma.hidden = who !== 'kuma';
+    chatInput.placeholder = who === 'kuma' ? 'Talk to Kuma… (he can’t leave his chair)' : 'Ask him to go somewhere, make matcha, dance…';
+    if (!logs[who].children.length) addMsg('bot', GREET[who]);
+    renderStatus(mind);
+    chatInput.focus();
+  }
+  document.querySelectorAll('#chat-tabs button').forEach((b) => b.addEventListener('click', () => setTalkTo(b.dataset.who)));
+  function toggleChat(open = chatEl.hidden, who) {
     chatEl.hidden = !open;
     $('#btn-chat').classList.toggle('on', open);
-    if (open) { setTimeout(() => chatInput.focus(), 30); if (!chatLog.children.length) addMsg('bot', 'Hi! Tell me what to do — “go to the kitchen”, “make some matcha”, “visit Kuma”, “dance”… I’ll think about it.'); }
+    if (open) { setTalkTo(who || talkTo); setTimeout(() => chatInput.focus(), 30); }
   }
-  function addMsg(who, text, note) {
+  function addMsg(who, text, note, log = logs[talkTo]) {
     const m = document.createElement('div');
-    m.className = `m ${who}`;
+    m.className = `m ${who}${log === logs.kuma && who.startsWith('bot') ? ' kuma' : ''}`;
     m.textContent = text;
     if (note) { const s = document.createElement('small'); s.textContent = note; m.append(s); }
-    chatLog.append(m);
-    chatLog.scrollTop = 1e6;
+    log.append(m);
+    log.scrollTop = 1e6;
     return m;
   }
   $('#chat-close').addEventListener('click', () => toggleChat(false));
   chatInput.addEventListener('keydown', (e) => { if (e.key === 'Escape') { toggleChat(false); chatInput.blur(); } e.stopPropagation(); });
+  const nowHHMM = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   $('#chat-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const text = chatInput.value.trim();
     if (!text) return;
     chatInput.value = '';
     audio.unlock();
-    addMsg('me', text);
-    if (brain.broken) { addMsg('bot', '*bzzt* … (he’s broken — press Repair)'); return; }
-    const pending = addMsg('bot typing', mind.status === 'ready' ? 'MrAgent is thinking…' : 'thinking…');
+    const who = talkTo, log = logs[who];
+    addMsg('me', text, null, log);
+    if (who === 'kuma') { await talkToKuma(text, log); return; }
+    if (brain.broken) { addMsg('bot', '*bzzt* … (he’s broken — press Repair)', null, log); return; }
+    const pending = addMsg('bot typing', mind.status === 'ready' ? 'MrAgent is thinking…' : 'thinking…', null, log);
     robot.face.set('thinking', 8);
     if (mind.status === 'ready') hud.say('🤔 …', 20);
     const p = robot.root.position;
     const roomNow = house.rooms.find((r) => p.x >= r.rect[0] && p.x <= r.rect[2] && p.z >= r.rect[1] && p.z <= r.rect[3]);
     const d = await mind.think(text, {
       activity: brain.activity, room: roomNow ? roomNow.name : 'garden', energy: robot.energy, integrity: damage.integrity,
-      recentPunches, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    });
+      recentPunches, time: nowHHMM(),
+    }, 'agent');
     pending.remove();
     robot.face.set(d.mood && d.mood !== 'normal' ? d.mood : 'happy', 2);
     const cmd = toCommand(d);
     const acting = d.action !== 'chat' && cmd;
-    addMsg('bot', d.reply, `${d.source === 'qwen' ? 'MrAgent AI' : 'quick reply'}${acting ? ` · ${d.action.replace(/_/g, ' ')}${d.place && d.place !== 'none' ? ` → ${d.place.replace(/_/g, ' ')}` : ''}` : ''}`);
+    addMsg('bot', d.reply, `${d.source === 'qwen' ? 'MrAgent AI' : 'quick reply'}${acting ? ` · ${d.action.replace(/_/g, ' ')}${d.place && d.place !== 'none' ? ` → ${d.place.replace(/_/g, ' ')}` : ''}` : ''}`, log);
     if (acting) {
       brain.command(cmd);
       if (cmd.type === 'drive') { brain.driving = true; followRobot = true; autoFollow = true; $('#btn-follow').classList.add('on'); }
     } else brain.say(d.reply, Math.min(6, 1.5 + d.reply.length / 18));
   });
-  // model status
-  mind.onChange((m) => {
+
+  async function talkToKuma(text, log) {
+    const pending = addMsg('bot typing', mind.status === 'ready' ? 'Kuma is thinking…' : 'thinking…', null, log);
+    if (mind.status === 'ready') hud.kumaSay('…', 20);
+    const d = await mind.think(text, {
+      pc: { desktop: 'working (for now)', update: `force-updating, ${winpc.percent}%`, bsod: 'blue screen', boot: 'rebooting' }[winpc.state] || winpc.state,
+      crashes: winpc.crashes, updates: winpc.updates, agent: brain.broken ? 'broken on the floor' : brain.activity.toLowerCase(), time: nowHHMM(),
+    }, 'kuma');
+    pending.remove();
+    const acting = d.action !== 'chat';
+    addMsg('bot', d.reply, `${d.source === 'qwen' ? 'Kuma AI' : 'quick reply'}${acting ? ` · ${d.action.replace(/_/g, ' ')}` : ''}`, log);
+    hud.kumaSay(d.reply, Math.min(7, 2 + d.reply.length / 16));
+    kuma.act(d.action, d.mood);
+    if (d.action === 'restart_pc') setTimeout(() => winpc.forceUpdate(), 1200);
+    if (d.action === 'call_mr_agent' && !brain.broken) brain.command({ type: 'goto', target: 'kuma', label: 'Kuma called for help', say: pick(['Coming, Kuma!', 'On my way — hold on!', 'Did it blue-screen again?']) });
+  }
+
+  // model status (one model, two minds)
+  function renderStatus(m) {
     const box = $('#chat-brain');
+    const N = NAMES[talkTo];
     box.classList.toggle('ready', m.status === 'ready');
-    $('#chat-model').textContent = { idle: '🧠 MrAgent (basic mode)', loading: `🧠 Waking up MrAgent… ${Math.round(m.progress * 100)}%`, ready: '🧠 MrAgent · running on your device', unsupported: '🧠 MrAgent (basic mode — no WebGPU here)', error: '🧠 MrAgent (basic mode)' }[m.status];
+    $('#chat-model').textContent = { idle: `🧠 ${N} (basic mode)`, loading: `🧠 Waking up ${N}… ${Math.round(m.progress * 100)}%`, ready: `🧠 ${N} · running on your device`, unsupported: `🧠 ${N} (basic mode — no WebGPU here)`, error: `🧠 ${N} (basic mode)` }[m.status];
+    $('#chat-load').textContent = `Wake up ${N}`;
     $('#chat-load').hidden = m.status !== 'idle' && m.status !== 'error';
     $('#chat-bar').hidden = m.status !== 'loading';
     $('#chat-bar i').style.width = `${Math.round(m.progress * 100)}%`;
-    box.title = m.status === 'loading' ? 'Downloading MrAgent’s brain (about 1 GB, cached after the first time)' : m.status === 'ready' ? 'MrAgent runs entirely in your browser' : '';
-  });
+    box.title = m.status === 'loading' ? 'Downloading the robots’ brain (about 1 GB, cached after the first time)' : m.status === 'ready' ? `${N} runs entirely in your browser` : '';
+  }
+  mind.onChange(renderStatus);
   $('#chat-load').addEventListener('click', () => mind.load());
   // fetch the model in the background shortly after start (it's cached by the browser after the first time)
   try { if (localStorage.getItem('mragent.qwen') !== 'off') setTimeout(() => mind.load(), 4000); } catch { setTimeout(() => mind.load(), 4000); }

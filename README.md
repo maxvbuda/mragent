@@ -56,6 +56,15 @@ over, visit Kuma, let you drive…) and a mood. He refuses rude, harmful or impo
 requests. Without WebGPU, or while the weights are still downloading, a rule-based parser
 stands in. Set `localStorage['mragent.qwen'] = 'off'` to stop the automatic download.
 
+In the chat the AI is called **MrAgent**, and it doesn't know how it was built: replies
+that mention FreeCAD or CAD are cut out.
+
+**Kuma has his own AI** (the 🐻 Kuma tab, or click him). He uses the same model with his own
+personality: grumpy, sarcastic, worn down by Windows and jealous of Mr. Agent's Mac. He's told
+how his PC is doing (updating, blue-screened, how many crashes today) and what Mr. Agent
+is up to. He can't leave his chair, but he can slam the desk, cheer, lean back, get back to
+work, restart his PC, or call Mr. Agent over to help.
+
 ## Breaking him
 
 The torso is a hollow FreeCAD shell with a separate chest plate. Behind the plate are the

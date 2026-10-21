@@ -67,7 +67,7 @@ export function replyFor(who, text, os) {
   if (/code|project|working on/.test(t)) return `I’m writing ${os.ctx.screen.snip.path}. ${os.ctx.screen.linesToday.toLocaleString()} lines today. Open the Code app to watch me live!`;
   if (/walk|stretch|window/.test(t)) { b.queueActivity(/stretch/.test(t) ? 'stretch' : 'window'); return 'Good idea, I’ll take a little walk after you’re done here. 🚶'; }
   if (/joke|funny/.test(t)) return ['Why do robots never panic? They have nerves of steel. 🤖', 'I told my laptop a joke about UDP. Not sure it got it.', 'There are 10 kinds of robots… you know the rest.'][Math.floor(Math.random() * 3)];
-  if (/who are you|your name/.test(t)) return 'I’m Mr. Agent. I write code, walk around, and drink matcha I can’t taste. Built in FreeCAD!';
+  if (/who are you|your name/.test(t)) return 'I’m Mr. Agent. I write code, walk around, and drink matcha I can’t taste. Powered by matcha!';
   if (/\?$/.test(t)) return 'Great question. Let me think… 🤔 …I have no idea, but I’ll write a test for it.';
   return ['Interesting! Tell me more.', 'beep boop 🤖', 'Noted. I’ll add it to my TODO.txt.', 'Haha, nice.', '👍'][Math.floor(Math.random() * 5)];
 }

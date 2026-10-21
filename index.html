@@ -51,9 +51,10 @@
     </nav>
 
     <section class="hud card" id="chat" aria-label="Talk to Mr. Agent" hidden>
-      <header><b>Talk to Mr. Agent</b><button id="chat-close" title="Close (Esc)">✕</button></header>
+      <header><div id="chat-tabs"><button data-who="agent" class="on">🤖 Mr. Agent</button><button data-who="kuma">🐻 Kuma</button></div><button id="chat-close" title="Close (Esc)">✕</button></header>
       <div id="chat-brain"><span id="chat-model">🧠 MrAgent</span><button id="chat-load" hidden>Wake up MrAgent</button><div id="chat-bar" hidden><i></i></div></div>
-      <div id="chat-log"></div>
+      <div id="chat-log" class="chat-log"></div>
+      <div id="chat-log-kuma" class="chat-log" hidden></div>
       <form id="chat-form" autocomplete="off"><input id="chat-input" placeholder="Ask him to go somewhere, make matcha, dance…" maxlength="300" /><button>Send</button></form>
     </section>
 

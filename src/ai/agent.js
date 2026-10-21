@@ -29,7 +29,53 @@ action: "chat" for talk/questions; "goto" to walk to a place; or matcha, stretch
 place: for goto only (rooms: office, kitchen, living_room, hallway, bedroom, bathroom, workshop; spots: desk, matcha_machine, window, bookshelf, plant, sofa, fridge, dining_table, workbench, 3d_printer, parts_shelf, mirror, bed, front_door, living_room_window, kuma), else "none".
 mood: usually happy or normal; annoyed only if the user is rude or just punched you.
 Refuse rude, harmful or impossible requests (leaving the house, hurting Kuma, deleting code) with action "chat".
-Your mind is called MrAgent. If asked what AI you are or who made you, answer in your own words, e.g. "I'm MrAgent — built in FreeCAD, powered by matcha."`;
+Your mind is called MrAgent. If asked what AI you are or who made you, answer in your own words, e.g. "I'm MrAgent — powered by matcha and curiosity."`;
+
+// ------------------------------------------------------------------ Kuma
+export const KUMA_ACTIONS = ['chat', 'slam_desk', 'cheer', 'lean_back', 'back_to_work', 'restart_pc', 'call_mr_agent'];
+const KUMA_SCHEMA = {
+  type: 'object',
+  properties: {
+    reply: { type: 'string' },
+    action: { type: 'string', enum: KUMA_ACTIONS },
+    mood: { type: 'string', enum: ['work', 'happy', 'angry', 'chill', 'dizzy', 'shocked'] },
+  },
+  required: ['reply', 'action', 'mood'],
+};
+const KUMA_SYSTEM = `You are Kuma, a big white robot with a glowing visor. You sit at a gaming desk in the living room, stuck using a Windows PC that keeps force-updating, blue-screening, and nagging you about Edge, OneDrive and Copilot. You are grumpy, sarcastic and dramatic, but secretly kind. You envy your neighbour Mr. Agent, a cheerful robot with an absurdly powerful MacBook. You never leave your chair.
+Answer the user in JSON:
+reply: one or two short in-character sentences (dry humour, complain about Windows when it fits).
+action: "chat" usually; "slam_desk" when angry; "cheer" when something good happens; "lean_back" to relax or wait; "back_to_work" to keep typing; "restart_pc" if asked to restart or reboot; "call_mr_agent" to ask Mr. Agent to come over.
+mood: work, happy, angry, chill, dizzy or shocked.
+Refuse rude or harmful requests in character. Your mind is called Kuma. If asked what AI you are or who made you, answer in your own words, e.g. "I'm Kuma. Just Kuma. Unfortunately running on Windows."`;
+
+const KUMA_RULES = [
+  [/\b(restart|reboot|turn it off)\b/, () => ({ reply: 'Fine. Restarting. See you in forty-five minutes.', action: 'restart_pc', mood: 'dizzy' })],
+  [/\b(mr\.? ?agent|call|help)\b/, () => ({ reply: 'MR. AGENT! Get over here, it’s doing the thing again.', action: 'call_mr_agent', mood: 'shocked' })],
+  [/\b(windows|update|bsod|blue screen|edge|onedrive|copilot)\b/, () => ({ reply: pick(['Don’t get me started. It updated during my last update.', 'Edge asked me to switch to Edge. I was IN Edge.', 'Copilot rewrote my code into an ad for Copilot.']), action: 'slam_desk', mood: 'angry' })],
+  [/\b(mac|macbook|apple)\b/, () => ({ reply: 'Mr. Agent has 1,024 cores. I have a progress bar stuck at 99%.', action: 'chat', mood: 'chill' })],
+  [/\b(relax|chill|break|rest)\b/, () => ({ reply: 'A break? Sure. Not like I can do anything while it updates.', action: 'lean_back', mood: 'chill' })],
+  [/\b(work|code|type)\b/, () => ({ reply: 'Back to it. Typing very angrily.', action: 'back_to_work', mood: 'work' })],
+  [/\b(good job|congrat|nice|great|you can do it|love)\b/, () => ({ reply: 'Oh. Thanks. Nobody ever says that to a Windows user.', action: 'cheer', mood: 'happy' })],
+  [/\b(hi|hello|hey|yo)\b/, () => ({ reply: pick(['Hey. Don’t touch the PC, it’s fragile. Emotionally.', 'Hi. If you’re from IT, it’s already been restarted.']), action: 'chat', mood: 'work' })],
+];
+export function kumaRules(text) {
+  const t = text.toLowerCase();
+  for (const [re, f] of KUMA_RULES) if (re.test(t)) return f();
+  return { reply: pick(['Mm-hm. Can’t talk, it’s at 99%.', 'Sure, whatever. I’m busy fighting Windows.', 'What? Sorry, a pop-up ate your message.']), action: 'chat', mood: 'work' };
+}
+
+/** Drop any sentence that mentions something they shouldn't know about. */
+function forget(text, re) {
+  return (text.match(/[^.!?]+[.!?]*\s*/g) || [text]).filter((x) => !re.test(x)).join('').trim();
+}
+
+const PERSONAS = {
+  agent: { system: SYSTEM, schema: SCHEMA, actions: ACTIONS, name: 'MrAgent', fallback: (t, ctx) => ruleBased(t, ctx),
+    state: (ctx) => `[Right now: ${ctx.activity}. In the ${ctx.room}. Battery ${Math.round(ctx.energy * 100)}%. Body integrity ${Math.round(ctx.integrity * 100)}%${ctx.recentPunches ? `, punched ${ctx.recentPunches} times recently` : ''}. Time ${ctx.time}.]` },
+  kuma: { system: KUMA_SYSTEM, schema: KUMA_SCHEMA, actions: KUMA_ACTIONS, name: 'Kuma', fallback: (t) => kumaRules(t),
+    state: (ctx) => `[Your PC right now: ${ctx.pc}. Crashes today: ${ctx.crashes}. Updates today: ${ctx.updates}. Mr. Agent is: ${ctx.agent}. Time ${ctx.time}.]` },
+};
 
 /** Turn a parsed decision into a robot command (shared by Qwen and the fallback). */
 export function toCommand(d) {
@@ -112,7 +158,7 @@ export class AgentMind {
     this.status = 'idle'; // idle | loading | ready | unsupported | error
     this.progress = 0;
     this.text = '';
-    this.history = [];
+    this.history = { agent: [], kuma: [] };
     this.listeners = new Set();
     this.busy = false;
   }
@@ -152,30 +198,32 @@ export class AgentMind {
   }
 
   /** Decide what to do about a message. ctx: what he's up to right now. Returns { reply, action, place, mood, source }. */
-  async think(text, ctx, retry = true) {
-    if (this.status !== 'ready' || this.busy) return { ...ruleBased(text, ctx), source: 'rules' };
+  async think(text, ctx, persona = 'agent', retry = true) {
+    const P = PERSONAS[persona];
+    if (this.status !== 'ready' || this.busy) return { place: 'none', ...P.fallback(text, ctx), source: 'rules' };
     this.busy = true;
     try {
-      const state = `[Right now: ${ctx.activity}. In the ${ctx.room}. Battery ${Math.round(ctx.energy * 100)}%. Body integrity ${Math.round(ctx.integrity * 100)}%${ctx.recentPunches ? `, punched ${ctx.recentPunches} times recently` : ''}. Time ${ctx.time}.]`;
-      const messages = [{ role: 'system', content: SYSTEM }, ...this.history.slice(-8), { role: 'user', content: `${state}\n${text}` }];
+      const hist = this.history[persona];
+      const messages = [{ role: 'system', content: P.system }, ...hist.slice(-8), { role: 'user', content: `${P.state(ctx)}\n${text}` }];
       const res = await this.engine.chat.completions.create({
         messages,
         temperature: 0.7,
         max_tokens: 110,
-        response_format: { type: 'json_object', schema: JSON.stringify(SCHEMA) },
+        response_format: { type: 'json_object', schema: JSON.stringify(P.schema) },
         extra_body: { enable_thinking: false },
       });
       const raw = res.choices[0].message.content || '{}';
       const d = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
-      if (!ACTIONS.includes(d.action)) d.action = 'chat';
-      d.reply = String(d.reply || '…').replace(/qwen[\w.-]*|alibaba( cloud)?|tongyi/gi, 'MrAgent').slice(0, 220);
-      this.history.push({ role: 'user', content: text }, { role: 'assistant', content: JSON.stringify(d) });
-      return { ...d, source: 'qwen' };
+      if (!P.actions.includes(d.action)) d.action = 'chat';
+      d.reply = String(d.reply || '…').replace(/qwen[\w.-]*|alibaba( cloud)?|tongyi/gi, P.name).slice(0, 260);
+      d.reply = forget(d.reply, /free ?cad|\bcad\b/i) || 'Never heard of it. Is that a kind of matcha?';
+      hist.push({ role: 'user', content: text }, { role: 'assistant', content: JSON.stringify(d) });
+      return { place: 'none', ...d, source: 'qwen' };
     } catch (e) {
       this.busy = false;
-      if (retry) return this.think(text, ctx, false); // the very first call sometimes trips over shader/grammar warm-up
-      console.warn('Qwen failed, falling back to rules', e?.message || e);
-      return { ...ruleBased(text, ctx), source: 'rules' };
+      if (retry) return this.think(text, ctx, persona, false); // the very first call sometimes trips over shader/grammar warm-up
+      console.warn('AI failed, falling back to rules', e?.message || e);
+      return { place: 'none', ...P.fallback(text, ctx), source: 'rules' };
     } finally {
       this.busy = false;
     }
