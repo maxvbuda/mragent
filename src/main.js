@@ -39,7 +39,7 @@ async function boot() {
   const nav = new NavGrid(layout, { extra: house.wallObstacles });
 
   const hud = makeHud();
-  const memory = []; // what he remembers doing (shown in the brain view)
+  const memories = { agent: [], kuma: [] }; // what each robot remembers (shown in the brain view)
   const brain = new Brain({
     robot, room, house, nav, screen, layout, world,
     hooks: { say: hud.say, activity: (t) => { hud.activity(t); remember(t); }, arrived: (t) => arrived(t) },
@@ -59,6 +59,8 @@ async function boot() {
   const kuma = new Kuma(world.scene, layout, { say: hud.kumaSay });
   winpc.on((e, data) => {
     kuma.react(e, data);
+    const what = { bsod: '💥 Blue screen. Again.', update: '🔄 Windows started updating without asking.', work: '⌨️ PC is back. Typing.', win: '🎉 Something actually worked!', popup: `📢 Pop-up from ${data?.app || 'Windows'}: “${data?.title || ''}”` }[e];
+    if (what) remember(what, 'kuma');
     if (e === 'bsod' || e === 'popup') audio.winError();
   });
   kuma.onSlam = () => audio.thud();
@@ -301,37 +303,67 @@ async function boot() {
   window.addEventListener('keydown', (e) => { if (e.key === 'Shift') shiftHeld = true; });
   window.addEventListener('keyup', (e) => { if (e.key === 'Shift') shiftHeld = false; });
 
-  // ------------------------------------------------------------ inside his brain
+  // ------------------------------------------------------------ inside his brain (Mr. Agent's, or Kuma's)
   const bv = $('#brainview');
-  function remember(text) {
-    if (memory[0]?.text === text) return;
-    memory.unshift({ t: new Date(), text });
-    memory.length = Math.min(memory.length, 40);
-    if (!$('#brainview').hidden) renderMemory();
+  let brainWho = 'agent';
+  const kumaThink = { activity: 0, thought: '' };
+  function remember(text, who = 'agent') {
+    const mem = memories[who];
+    if (mem[0]?.text === text) return;
+    mem.unshift({ t: new Date(), text });
+    mem.length = Math.min(mem.length, 40);
+    if (!$('#brainview').hidden && who === brainWho) renderMemory();
   }
   function renderMemory() {
-    $('#bv-log').replaceChildren(...memory.map((m) => { const li = document.createElement('li'); const tm = document.createElement('time'); tm.textContent = m.t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }); const sp = document.createElement('span'); sp.textContent = m.text; li.append(tm, sp); return li; }));
+    $('#bv-log').replaceChildren(...memories[brainWho].map((m) => { const li = document.createElement('li'); const tm = document.createElement('time'); tm.textContent = m.t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }); const sp = document.createElement('span'); sp.textContent = m.text; li.append(tm, sp); return li; }));
   }
   function renderVitals() {
     const row = (k, v, wide) => `<div${wide ? ' class="wide"' : ''}><span>${k}</span> <b>${v}</b></div>`;
     const esc = (x) => String(x).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+    const mindRow = row('Mind', mind.status === 'ready' ? 'AI online' : mind.status === 'loading' ? `waking ${Math.round(mind.progress * 100)}%` : 'basic mode');
+    if (brainWho === 'kuma') {
+      $('#bv-vitals').innerHTML = row('Doing', kuma.rage >= 0 ? 'slamming the desk' : kuma.cheer >= 0 ? 'celebrating' : kuma.state === 'wait' ? 'waiting on Windows' : 'typing (angrily)', true)
+        + row('Visor', kuma.mood) + row('PC', { desktop: 'working', update: `updating ${winpc.percent}%`, bsod: 'blue screen', boot: 'rebooting' }[winpc.state])
+        + row('Crashes today', winpc.crashes) + row('Updates today', winpc.updates)
+        + mindRow + row('Patience', `${Math.max(0, 100 - winpc.crashes * 15 - winpc.updates * 10)}%`);
+      return;
+    }
     $('#bv-vitals').innerHTML = row('Doing', esc(brain.activity), true)
       + row('Mode', { life: 'living his life', cmd: 'following orders', user: 'on break', broken: 'broken' }[brain.mode] || brain.mode)
       + row('Face', robot.face.expr)
       + row('Battery', `${Math.round(robot.energy * 100)}%`)
       + row('Integrity', `${Math.round(damage.integrity * 100)}%`)
-      + row('Mind', mind.status === 'ready' ? 'AI online' : mind.status === 'loading' ? `waking ${Math.round(mind.progress * 100)}%` : 'basic mode')
+      + mindRow
       + row('Neural activity', `${Math.round(robot.brainActivity * 100)}%`);
   }
   let vitalsAcc = 0;
-  function toggleBrain(open = bv.hidden) {
-    bv.hidden = !open;
-    $('#btn-brain').classList.toggle('on', open);
-    robot.setXray(open);
-    if (!open) return;
+  function setBrainWho(who) {
+    if (who === brainWho && !bv.hidden) return;
+    brainWho = who;
+    bv.querySelector('header b').textContent = who === 'kuma' ? '🧠 Inside Kuma’s brain' : '🧠 Inside Mr. Agent’s brain';
+    robot.setXray(!bv.hidden && who === 'agent');
+    $('#bv-thought').classList.remove('live');
+    $('#bv-thought').innerHTML = `<span class="bv-dim">Talk to ${who === 'kuma' ? 'Kuma' : 'him'} (💬) and watch ${who === 'kuma' ? 'him' : 'him'} think…</span>`;
+    $('#bv-decision').textContent = '';
+    if (who === 'kuma' && kumaThink.thought) $('#bv-thought').textContent = kumaThink.thought;
     renderVitals();
     renderMemory();
+  }
+  function toggleBrain(open = bv.hidden, who = talkTo) {
+    bv.hidden = !open;
+    $('#btn-brain').classList.toggle('on', open);
+    if (!open) { robot.setXray(false); return; }
+    brainWho = null;
+    setBrainWho(who);
     if (inMac || flight) return;
+    if (who === 'kuma') {
+      // Kuma sits still: look at him from the side of his desk
+      const head = kuma.robot.head.getWorldPosition(new THREE.Vector3());
+      followRobot = false;
+      $('#btn-follow').classList.remove('on');
+      fly(head.clone().add(new THREE.Vector3(1.5, 0.35, -1.3)), head.clone().add(new THREE.Vector3(0, -0.15, 0)), 1.1);
+      return;
+    }
     // fly up to his face so you can see the brain through the glass
     const head = robot.head.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.12, 0));
     const fwd = robot.worldForward(new THREE.Vector3());
@@ -344,27 +376,29 @@ async function boot() {
   $('#brain-close').addEventListener('click', () => toggleBrain(false));
   /** Live view of one thought as it streams in. */
   function showThinking(who) {
-    if (who !== 'agent') return null;
+    if (!bv.hidden) setBrainWho(who);
     const el = $('#bv-thought');
-    el.classList.add('live');
-    el.textContent = '';
-    $('#bv-decision').textContent = '';
-    robot.brainActivity = 1;
+    const shown = () => !bv.hidden && brainWho === who;
+    if (shown()) { el.classList.add('live'); el.textContent = ''; $('#bv-decision').textContent = ''; }
+    if (who === 'agent') robot.brainActivity = 1; else kumaThink.activity = 1;
     return (u) => {
-      robot.brainActivity = 1;
+      if (who === 'agent') robot.brainActivity = 1; else kumaThink.activity = 1;
+      if (!shown()) return;
       el.textContent = u.thought || '…';
       $('#bv-context').textContent = u.context;
       $('#bv-json').textContent = u.raw;
     };
   }
-  function showDecision(d) {
+  function showDecision(d, who = 'agent') {
+    if (who === 'kuma') kumaThink.thought = d.thought || '';
+    remember(`💭 ${d.thought || d.reply}`, who);
+    if (bv.hidden || brainWho !== who) return;
     const el = $('#bv-thought');
     el.classList.remove('live');
     el.textContent = d.thought || (d.source === 'rules' ? 'Basic mode: I spotted a keyword and went with my gut.' : '…');
     const chip = (t) => { const i = document.createElement('i'); i.textContent = t; return i; };
-    $('#bv-decision').replaceChildren(chip(`action: ${d.action.replace(/_/g, ' ')}`), ...(d.place && d.place !== 'none' ? [chip(`→ ${d.place.replace(/_/g, ' ')}`)] : []), chip(`mood: ${d.mood || 'normal'}`), chip(d.source === 'qwen' ? 'MrAgent AI' : 'quick reply'));
+    $('#bv-decision').replaceChildren(chip(`action: ${d.action.replace(/_/g, ' ')}`), ...(d.place && d.place !== 'none' ? [chip(`→ ${d.place.replace(/_/g, ' ')}`)] : []), chip(`mood: ${d.mood || 'normal'}`), chip(d.source === 'qwen' ? `${who === 'kuma' ? 'Kuma' : 'MrAgent'} AI` : 'quick reply'));
     if (d.raw) $('#bv-json').textContent = d.raw;
-    remember(`💭 ${d.thought || d.reply}`);
   }
 
   // ------------------------------------------------------------ chat (Mr. Agent or Kuma)
@@ -384,6 +418,7 @@ async function boot() {
     chatInput.placeholder = who === 'kuma' ? 'Talk to Kuma… (he can’t leave his chair)' : 'Ask him to go somewhere, make matcha, dance…';
     if (!logs[who].children.length) addMsg('bot', GREET[who]);
     renderStatus(mind);
+    if (!bv.hidden) toggleBrain(true, who);
     chatInput.focus();
   }
   document.querySelectorAll('#chat-tabs button').forEach((b) => b.addEventListener('click', () => setTalkTo(b.dataset.who)));
@@ -441,8 +476,9 @@ async function boot() {
     const d = await mind.think(text, {
       pc: { desktop: 'working (for now)', update: `force-updating, ${winpc.percent}%`, bsod: 'blue screen', boot: 'rebooting' }[winpc.state] || winpc.state,
       crashes: winpc.crashes, updates: winpc.updates, agent: brain.broken ? 'broken on the floor' : brain.activity.toLowerCase(), time: nowHHMM(),
-    }, 'kuma');
+    }, 'kuma', true, showThinking('kuma'));
     pending.remove();
+    showDecision(d, 'kuma');
     const acting = d.action !== 'chat';
     addMsg('bot', d.reply, `${d.source === 'qwen' ? 'Kuma AI' : 'quick reply'}${acting ? ` · ${d.action.replace(/_/g, ' ')}` : ''}`, log);
     hud.kumaSay(d.reply, Math.min(7, 2 + d.reply.length / 16));

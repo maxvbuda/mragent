@@ -64,7 +64,7 @@ that mention FreeCAD or CAD are cut out.
 FreeCAD (two lobes, folds, glowing neurons and a stem), which lights up and pulses while he
 thinks. A panel shows his vitals and what he's doing, his private inner monologue streaming in
 token by token as the AI writes it, the decision he made, exactly what his mind was told and
-the raw JSON it wrote back, and a memory log of everything he's done and been through.
+the raw JSON it wrote back, and a memory log of everything he's done and been through. Switch the chat to Kuma and the panel shows Kuma's brain instead: his grumpy thoughts, how his PC is doing, his patience, and a memory of every blue screen and pop-up.
 
 **Kuma has his own AI** (the 🐻 Kuma tab, or click him). He uses the same model with his own
 personality: grumpy, sarcastic, worn down by Windows and jealous of Mr. Agent's Mac. He's told
