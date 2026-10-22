@@ -68,7 +68,7 @@ async function boot() {
   // punching him: parts come off, sparks fly
   let shake = 0;
   const damage = new Damage({
-    scene: world.scene, robot, brain, audio, bounds: layout.house.bounds,
+    scene: world.scene, robot, brain, audio, bounds: layout.house.bounds, outerBounds: layout.house.outside?.bounds, groundY: house.groundY,
     hooks: {
       shake: (a) => { shake = Math.max(shake, a); },
       onHit: (n, integrity) => { remember(`🥊 Got punched (hit ${n}). Integrity ${Math.round(integrity * 100)}%.`); $('#integrity').hidden = false; $('#integrity b').style.width = `${Math.round(integrity * 100)}%`; recentPunches++; },

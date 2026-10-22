@@ -20,7 +20,9 @@ const OUCH = [
 ];
 
 export class Damage {
-  constructor({ scene, robot, brain, audio, hooks = {}, bounds }) {
+  constructor({ scene, robot, brain, audio, hooks = {}, bounds, outerBounds = null, groundY = () => 0 }) {
+    this.outerBounds = outerBounds || bounds;
+    this.groundY = groundY; // the lawn is lower than the house floor
     Object.assign(this, { scene, robot, brain, audio, hooks });
     this.bounds = bounds || [-9, -8.5, 8.5, 2.96];
     this.hits = 0;
@@ -155,7 +157,9 @@ export class Damage {
     for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) corners.push(V(x, y, z));
     const v = dir.clone().setY(0).normalize().multiplyScalar(1.6 + Math.random()).add(V(0, up, 0));
     const w = V(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize().multiplyScalar(spin);
-    this.bodies.push({ obj, v, w, corners, centre: box.getCenter(V()), rest: false, quiet: 0 });
+    const wp = obj.getWorldPosition(V()), [hx0, hz0, hx1, hz1] = this.bounds;
+    const indoors = wp.x > hx0 && wp.x < hx1 && wp.z > hz0 && wp.z < hz1;
+    this.bodies.push({ obj, v, w, corners, centre: box.getCenter(V()), rest: false, quiet: 0, bounds: indoors ? this.bounds : this.outerBounds });
     this.burst(obj.getWorldPosition(V()), 40, 3);
     this.puff(obj.getWorldPosition(V()), 0.35);
   }
@@ -201,7 +205,6 @@ export class Damage {
   // ------------------------------------------------------------ per frame
   update(dt) {
     this.repairing?.(dt);
-    const [x0, z0, x1, z1] = this.bounds;
     const up = V(0, 1, 0), tmpC = V(), cw = V(), rc = V();
     for (const b of this.bodies) {
       if (b.rest) continue;
@@ -218,8 +221,9 @@ export class Damage {
         if (tmpC.y < minY) { minY = tmpC.y; low = low ? low.copy(tmpC) : tmpC.clone(); }
       }
       for (const c of b.corners) if (tmpC.copy(c).applyMatrix4(o.matrixWorld).y < minY + 0.012) touching++;
-      if (minY < 0) {
-        o.position.y -= minY;
+      const floor = this.groundY(o.position.x, o.position.z);
+      if (minY < floor) {
+        o.position.y += floor - minY;
         cw.copy(b.centre).applyMatrix4(o.matrixWorld);
         rc.subVectors(low, cw);
         if (b.v.y < -0.6) { this.audio.clank(Math.min(1, -b.v.y / 4)); this.burst(low, 6, 1); }
@@ -232,8 +236,9 @@ export class Damage {
         if (b.v.length() < 0.12 && b.w.length() < 0.4 && touching >= 3) { if ((b.quiet += dt) > 0.3) b.rest = true; } else b.quiet = 0;
       }
       const p = o.position;
-      if (p.x < x0 + 0.2 || p.x > x1 - 0.2) { b.v.x *= -0.4; p.x = THREE.MathUtils.clamp(p.x, x0 + 0.2, x1 - 0.2); }
-      if (p.z < z0 + 0.2 || p.z > z1 - 0.2) { b.v.z *= -0.4; p.z = THREE.MathUtils.clamp(p.z, z0 + 0.2, z1 - 0.2); }
+      const [bx0, bz0, bx1, bz1] = b.bounds; // parts knocked off indoors stay inside the walls
+      if (p.x < bx0 + 0.2 || p.x > bx1 - 0.2) { b.v.x *= -0.4; p.x = THREE.MathUtils.clamp(p.x, bx0 + 0.2, bx1 - 0.2); }
+      if (p.z < bz0 + 0.2 || p.z > bz1 - 0.2) { b.v.z *= -0.4; p.z = THREE.MathUtils.clamp(p.z, bz0 + 0.2, bz1 - 0.2); }
     }
     // fizzing wires
     for (const e of this.emitters) {
@@ -254,7 +259,8 @@ export class Damage {
       life[i] -= dt;
       vel[i * 3 + 1] -= G * 0.6 * dt;
       pos[i * 3] += vel[i * 3] * dt; pos[i * 3 + 1] += vel[i * 3 + 1] * dt; pos[i * 3 + 2] += vel[i * 3 + 2] * dt;
-      if (pos[i * 3 + 1] < 0.005) { pos[i * 3 + 1] = 0.005; vel[i * 3 + 1] *= -0.3; vel[i * 3] *= 0.5; vel[i * 3 + 2] *= 0.5; }
+      const fy = this.groundY(pos[i * 3], pos[i * 3 + 2]) + 0.005;
+      if (pos[i * 3 + 1] < fy) { pos[i * 3 + 1] = fy; vel[i * 3 + 1] *= -0.3; vel[i * 3] *= 0.5; vel[i * 3 + 2] *= 0.5; }
     }
     this.sparkPts.geometry.attributes.position.needsUpdate = true;
     for (const p of this.smoke) {
