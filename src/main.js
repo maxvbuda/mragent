@@ -90,19 +90,11 @@ async function boot() {
     },
   });
   brain.delivery = delivery;
-  const waitingFor = { agent: [], kuma: [] };
-  /** Send the right robot out for a parcel (or queue it if they're busy). */
+  /** Send the right robot out for a parcel; both keep their own queue, so nothing gets lost. */
   function dispatch(o) {
-    if (o.who === 'kuma') { kuma.fetch(o, delivery); return; } // Kuma queues his own errands
-    if (brain.broken || brain.mode === 'user' || brain.fetching) { waitingFor.agent.push(o); return; }
-    brain.fetching = true;
-    brain.command({ type: 'fetch', order: o });
+    if (o.who === 'kuma') kuma.fetch(o, delivery);
+    else brain.enqueueFetch(o);
   }
-  setInterval(() => {
-    // pick up anything still waiting once they're free again
-    if (!brain.fetching && !brain.broken && brain.mode !== 'user' && waitingFor.agent.length) dispatch(waitingFor.agent.shift());
-    if (brain.fetching && brain.mode !== 'cmd') brain.fetching = false;
-  }, 1500);
   /** Music for a dance or a party; it stops again afterwards (unless you were already playing some). */
   function partyMusic(seconds = 0) {
     if (music.playing) return;
@@ -115,7 +107,6 @@ async function boot() {
     const agentSay = (t) => brain.say(t, 3.2);
     remember(`🎁 Unboxed: ${o.item.name}`, who);
     hud.toast(`🎁 ${who === 'kuma' ? 'Kuma' : 'Mr. Agent'} unboxed ${o.item.emoji} ${o.item.name}`);
-    if (who === 'agent') brain.fetching = false;
     if (who === 'kuma') {
       kuma.cheer = 0;
       kuma.setMood('happy');
@@ -812,7 +803,7 @@ async function boot() {
 
     const shakeOff = new THREE.Vector3();
     if (shake > 0.001 && !inMac) { shakeOff.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).multiplyScalar(shake); world.camera.position.add(shakeOff); shake *= Math.exp(-dt * 12); }
-    if (frameNo % 2 === 0) world.renderer.shadowMap.needsUpdate = true;
+    if (frameNo % 2 === 1) world.renderer.shadowMap.needsUpdate = true; // odd frames, so the very first frame has a shadow map
     if (!inMac || flight) world.render();
     world.camera.position.sub(shakeOff);
     mac.tick(dt);

@@ -45,6 +45,7 @@ export class Brain {
     this.stats = { coffees: 0, steps: 0 };
     this.spots = this.makeSpots();
     this.cmdQueue = [];
+    this.fetchQueue = []; // parcels waiting on the porch for him
     this.crit = 0;          // > 0 while in a move that must finish (standing up, sitting down, handling the mug)
     this.aborting = false;  // set by command(): every other running task is cancelled
     this.input = { x: 0, z: 0, run: false }; // WASD, camera-relative, written by main.js
@@ -130,6 +131,7 @@ export class Brain {
       try {
         if (this.cmdQueue.length) { await this.runCommand(this.cmdQueue.shift()); continue; }
         if (this.broken) { await this.brokenMode(); continue; }
+        if (this.fetchQueue.length && this.pending !== 'user') { await this.runCommand({ type: 'fetch', order: this.fetchQueue.shift() }); continue; }
         if (this.pending === 'user') { await this.userMode(); continue; }
         if (!this.sitting && !this.queue.length && !(this.pending && this.pending !== 'user')) { await this.returnToDesk(); this.setArms('thighs'); continue; }
         const next = this.queue.shift() || (this.pending && this.pending !== 'user' ? this.pending : null);
@@ -273,6 +275,12 @@ export class Brain {
       this.mode = 'life';
       if (c.type === 'drive') this.driving = false;
     }
+  }
+
+  /** A parcel arrived for him: he'll go and get it as soon as he's free (interrupting a normal activity). */
+  enqueueFetch(o) {
+    this.fetchQueue.push(o);
+    if (this.mode === 'life' && !this.crit && !this.broken) this.aborting = true;
   }
 
   /** A parcel is on the porch: go out, pick it up, bring it in and unbox it next to the desk. */
