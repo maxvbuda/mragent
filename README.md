@@ -23,7 +23,8 @@ workshop. Walls between you and what you're looking at drop down automatically
 |---|---|
 | Click the MacBook (or **M**) | The camera flies into the screen and you get his Mac. He gets up and takes a break. |
 | **/** or the 💬 button | Talk to him. Qwen decides what you mean and whether he'll do it |
-| **W A S D** (+ Shift) | Walk him around yourself, relative to the camera (Shift hurries) |
+| **W A S D** (+ Shift) | Move the camera around the house (Shift is faster) |
+| **Arrow keys** (+ Shift) | Walk him around yourself, relative to the camera (Shift hurries) |
 | Click the robot (or **H**) | He waves and says hi |
 | **I** | See inside his brain: x-ray head, live thoughts, memory |
 | **P**, then click him | Punch mode: he flinches, then his chest plate, backpack, an arm and finally his head come off |

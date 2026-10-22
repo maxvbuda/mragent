@@ -48,7 +48,7 @@ export class Brain {
     this.fetchQueue = []; // parcels waiting on the porch for him
     this.crit = 0;          // > 0 while in a move that must finish (standing up, sitting down, handling the mug)
     this.aborting = false;  // set by command(): every other running task is cancelled
-    this.input = { x: 0, z: 0, run: false }; // WASD, camera-relative, written by main.js
+    this.input = { x: 0, z: 0, run: false }; // arrow keys, camera-relative, written by main.js
     for (const name of ['standUp', 'sitDown', 'sitOnSpot', 'standFromSpot', 'grabMug', 'placeMug']) {
       const fn = this[name].bind(this);
       this[name] = async (...a) => { this.crit++; try { return await fn(...a); } finally { this.crit--; } };
@@ -154,7 +154,7 @@ export class Brain {
     }
   }
 
-  // ------------------------------------------------------------ commands (chat, WASD, punches)
+  // ------------------------------------------------------------ commands (chat, arrow keys, punches)
   /** Drop whatever he's doing (safely) and do this instead. */
   command(cmd) {
     if (this.broken && cmd.type !== 'broken') return false;
@@ -374,7 +374,7 @@ export class Brain {
     r.lookAt(null);
   }
 
-  /** WASD: he walks where you steer him, relative to the camera. */
+  /** Arrow keys: he walks where you steer him, relative to the camera. */
   async driveMode() {
     const r = this.robot;
     this.driving = true;

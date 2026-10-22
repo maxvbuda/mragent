@@ -364,16 +364,22 @@ async function boot() {
   const keymap = { m: 'mac', c: 'coffee', y: 'stretch', o: 'window', n: 'dance', h: 'wave', t: 'time', v: 'sound', r: 'reset', f: 'follow', g: 'tv', k: 'tinker', b: 'snack', z: 'sleep', x: 'walls', p: 'punch', u: 'repair', i: 'brain', e: 'shop' };
   const typing = (e) => /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
 
-  // ------------------------------------------------------------ WASD: walk him around (camera-relative, Shift to hurry)
+  // ------------------------------------------------------------ keys that are held: WASD moves the camera, arrow keys walk him
   const held = new Set();
   let autoFollow = false;
+  const CAM_KEYS = ['w', 'a', 's', 'd'], DRIVE_KEYS = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
   window.addEventListener('keydown', (e) => {
     if (inMac || typing(e) || e.metaKey || e.ctrlKey || e.altKey) return;
     const k = e.key.toLowerCase();
-    if (!['w', 'a', 's', 'd'].includes(k)) return;
+    if (!CAM_KEYS.includes(k) && !DRIVE_KEYS.includes(k)) return;
     e.preventDefault();
     held.add(k);
     audio.unlock();
+    if (CAM_KEYS.includes(k)) {
+      // flying the camera yourself: stop following him
+      if (followRobot && !brain.driving) { followRobot = false; autoFollow = false; $('#btn-follow').classList.remove('on'); }
+      return;
+    }
     if (!brain.driving && !brain.broken) {
       if (brain.command({ type: 'drive' })) {
         brain.driving = true;
@@ -383,16 +389,37 @@ async function boot() {
   });
   window.addEventListener('keyup', (e) => held.delete(e.key.toLowerCase()));
   window.addEventListener('blur', () => held.clear());
+  const camDir = () => {
+    const f = new THREE.Vector3().subVectors(world.controls.target, world.camera.position).setY(0);
+    if (f.lengthSq() < 1e-6) f.set(0, 0, -1);
+    f.normalize();
+    return { f, r: new THREE.Vector3(-f.z, 0, f.x) };
+  };
   function updateDriveInput(shift) {
-    const f = new THREE.Vector3().subVectors(world.controls.target, world.camera.position).setY(0).normalize();
-    const r = new THREE.Vector3(-f.z, 0, f.x);
+    const { f, r } = camDir();
     const v = new THREE.Vector3();
-    if (held.has('w')) v.add(f);
-    if (held.has('s')) v.sub(f);
-    if (held.has('d')) v.add(r);
-    if (held.has('a')) v.sub(r);
+    if (held.has('arrowup')) v.add(f);
+    if (held.has('arrowdown')) v.sub(f);
+    if (held.has('arrowright')) v.add(r);
+    if (held.has('arrowleft')) v.sub(r);
     brain.input.x = v.x; brain.input.z = v.z; brain.input.run = shift;
     if (autoFollow && !brain.driving) { autoFollow = false; followRobot = false; $('#btn-follow').classList.remove('on'); }
+  }
+  /** WASD slides the camera (and what it's looking at) across the floor; Shift goes faster. */
+  const camVel = new THREE.Vector3();
+  function updateCameraKeys(dt, shift) {
+    const { f, r } = camDir();
+    const want = new THREE.Vector3();
+    if (held.has('w')) want.add(f);
+    if (held.has('s')) want.sub(f);
+    if (held.has('d')) want.add(r);
+    if (held.has('a')) want.sub(r);
+    const dist = world.camera.position.distanceTo(world.controls.target);
+    if (want.lengthSq() > 0) want.normalize().multiplyScalar(THREE.MathUtils.clamp(dist * 0.45, 1.2, 8) * (shift ? 2.5 : 1));
+    camVel.lerp(want, 1 - Math.exp(-dt * 10)); // ease in and out
+    if (camVel.lengthSq() < 1e-6) return;
+    world.camera.position.addScaledVector(camVel, dt);
+    world.controls.target.addScaledVector(camVel, dt);
   }
   let shiftHeld = false;
   window.addEventListener('keydown', (e) => { if (e.key === 'Shift') shiftHeld = true; });
@@ -750,6 +777,7 @@ async function boot() {
         world.controls.target.add(delta);
         world.camera.position.add(delta);
       }
+      updateCameraKeys(dt, shiftHeld);
       world.controls.update();
       keepInRoom(world.camera.position, 0.18);
       keepInRoom(world.controls.target, 0.3, true);

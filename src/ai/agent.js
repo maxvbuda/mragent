@@ -30,7 +30,7 @@ const SYSTEM = `You are Mr. Agent, a cheerful, witty robot who lives in a house,
 Read the user's message, decide what they want and whether you'll do it, and answer in JSON:
 thought: your private inner monologue first: what they want, how you feel about it, and what you'll do (one or two sentences, honest, nobody sees it).
 reply: one short in-character sentence.
-action: "chat" for talk/questions; "goto" to walk to a place (inside or outside); or matcha, stretch, watch_tv, raid_fridge, tinker, nap, dance, wave, spin, jump, come_here, go_to_desk, look_at_me, visit_kuma, drive_me (user steers you with WASD), order_item (order something online).
+action: "chat" for talk/questions; "goto" to walk to a place (inside or outside); or matcha, stretch, watch_tv, raid_fridge, tinker, nap, dance, wave, spin, jump, come_here, go_to_desk, look_at_me, visit_kuma, drive_me (user steers you with the arrow keys), order_item (order something online).
 place: for goto only (rooms: office, kitchen, living_room, hallway, bedroom, bathroom, workshop; spots: desk, matcha_machine, window, bookshelf, plant, sofa, fridge, dining_table, workbench, 3d_printer, parts_shelf, mirror, bed, front_door, living_room_window, kuma; outside in the garden: garden, front_porch, garden_bench, mailbox, backyard, side_yard), else "none".
 item: for order_item only, else "none". ${SHOP_LINE}
 You're allowed outside in the garden, but not off the property.
@@ -135,7 +135,7 @@ const RULES = [
   [/\b(punch|hit|kick|break|destroy|kill)\b.*\bkuma\b/, () => ({ reply: 'Absolutely not. Kuma has suffered enough — he uses Windows.', action: 'chat', mood: 'annoyed' })],
   [/\b(leave|outside|go out|run away)\b.*\b(house|home)?/, () => ({ reply: 'I’m not allowed outside. The garden has no Wi-Fi.', action: 'chat', mood: 'normal' })],
   [/\bdelete\b.*\b(code|repo|files?)\b|rm -rf/, () => ({ reply: 'Nice try. I have backups of my backups.', action: 'chat', mood: 'annoyed' })],
-  [/\b(drive|steer|control|wasd)\b/, () => ({ reply: 'Okay, take the controls — WASD to steer me, Shift to hurry.', action: 'drive_me' })],
+  [/\b(drive|steer|control|wasd|arrow keys)\b/, () => ({ reply: 'Okay, take the controls — arrow keys to steer me, Shift to hurry.', action: 'drive_me' })],
   [/\b(matcha|tea|coffee|drink|thirsty|refill)\b/, () => ({ reply: pick(['Matcha time!', 'Whisking one up.', 'You read my mind.']), action: 'matcha' })],
   [/\b(stretch|exercise|yoga)\b/, () => ({ reply: 'Good idea, my servos are stiff.', action: 'stretch' })],
   [/\b(tv|television|telly|watch)\b/, () => ({ reply: 'Robo News is on!', action: 'watch_tv' })],
