@@ -16,6 +16,7 @@ import { WinOS } from './win/os.js';
 import { Damage } from './scene/damage.js';
 import { AgentMind, toCommand } from './ai/agent.js';
 import { Delivery, ITEMS } from './scene/delivery.js';
+import { mergeSiblings, InstancedParts } from './scene/batch.js';
 
 const $ = (s) => document.querySelector(s);
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -102,6 +103,13 @@ async function boot() {
     if (!brain.fetching && !brain.broken && brain.mode !== 'user' && waitingFor.agent.length) dispatch(waitingFor.agent.shift());
     if (brain.fetching && brain.mode !== 'cmd') brain.fetching = false;
   }, 1500);
+  /** Music for a dance or a party; it stops again afterwards (unless you were already playing some). */
+  function partyMusic(seconds = 0) {
+    if (music.playing) return;
+    music.play();
+    brain.partyMusic = true;
+    if (seconds) setTimeout(() => { if (brain.partyMusic && !brain.dancing) { music.pause(); brain.partyMusic = false; } }, seconds * 1000);
+  }
   function itemEffect(o, who) {
     const id = o.itemId;
     const agentSay = (t) => brain.say(t, 3.2);
@@ -116,13 +124,13 @@ async function boot() {
       if (id === 'keyboard') { kuma.typeBoost = true; kuma.say('Clicky. Clacky. Now I can rage-type twice as fast.'); return; }
       if (id === 'spareParts') { if (damage.hits || damage.lost.length) { kuma.say('Spare parts? Hold on, Mr. Agent, I’ll fix you.'); damage.repair(); } else kuma.say('Spare parts. Nice. I’ll keep them for when Windows breaks me.'); return; }
       kuma.say({ matcha: 'Matcha. I don’t even have a mug. Thanks though.', duck: 'A duck. I will explain my bugs to it. It will judge me.', pizza: 'I can’t eat pizza. Put it on the table for the humans.', battery: 'Ooh, fresh electrons. Better than coffee.', plant: 'A plant. It’ll be the only thing on this desk that’s thriving.', balloons: 'Balloons? Is it my birthday? Is it Patch Tuesday?', trophy: '“World’s Best Robot”. Finally, some recognition.' }[id] || 'For me? Thanks!');
-      if (id === 'balloons' && !music.playing) music.play();
+      if (id === 'balloons') partyMusic(20);
       return;
     }
     if (id === 'matcha') { brain.fill = 1; room.setFill(1); robot.energy = 1; agentSay('Ceremonial grade! The mug is full and so is my heart.'); return; }
     if (id === 'battery') { robot.energy = 1; agentSay('Mmm, 100%. I feel like a new robot.'); return; }
     if (id === 'spareParts') { if (damage.hits || damage.lost.length) damage.repair(); else agentSay('Spare parts! I’ll keep them in case someone punches me again. 👀'); return; }
-    if (id === 'balloons') { agentSay('PARTY! 🎈'); if (!music.playing) music.play(); brain.command({ type: 'dance', seconds: 12 }); return; }
+    if (id === 'balloons') { agentSay('PARTY! 🎈'); partyMusic(); brain.command({ type: 'dance', seconds: 12 }); return; }
     if (id === 'linuxUsb') { agentSay('Linux? I’ll give this to Kuma. He needs it more than I do.'); return; }
     if (id === 'macbook') { agentSay('Another Mac? Now I can code in stereo.'); return; }
     agentSay({ duck: 'Hello, duck. Let me explain my code to you. Line one…', pizza: 'I can’t eat this. I’ll put it on the dining table for guests.', plant: 'A new friend for the fern!', trophy: 'World’s Best Robot? Me? 🥹', keyboard: 'Clicky! Kuma would love this.' }[id] || 'Thank you!');
@@ -317,7 +325,7 @@ async function boot() {
     coffee: () => { brain.queueActivity('coffee'); hud.toast('🍵 Matcha run queued'); },
     stretch: () => { brain.queueActivity('stretch'); hud.toast('🙆 Stretch break queued'); },
     window: () => { brain.queueActivity('window'); hud.toast('🪟 Window break queued'); },
-    dance: () => { brain.queueActivity('dance'); if (!music.playing) music.play(); hud.toast('🎶 Dance break'); },
+    dance: () => { brain.queueActivity('dance'); partyMusic(); hud.toast('🎶 Dance break'); },
     wave: () => brain.wave(),
     time: () => cycleTime(),
     sound: () => {
@@ -521,7 +529,7 @@ async function boot() {
   function toggleChat(open = chatEl.hidden, who) {
     chatEl.hidden = !open;
     $('#btn-chat').classList.toggle('on', open);
-    if (open) { setTalkTo(who || talkTo); setTimeout(() => chatInput.focus(), 30); }
+    if (open) { setTalkTo(who || talkTo); setTimeout(() => chatInput.focus(), 30); if (aiAllowed()) mind.load(); }
   }
   function addMsg(who, text, note, log = logs[talkTo]) {
     const m = document.createElement('div');
@@ -542,6 +550,7 @@ async function boot() {
     chatInput.value = '';
     audio.unlock();
     const who = talkTo, log = logs[who];
+    if (mind.status === 'idle' && aiAllowed()) mind.load(); // it unloads itself after a quiet spell
     addMsg('me', text, null, log);
     if (who === 'kuma') { await talkToKuma(text, log); return; }
     if (brain.broken) { addMsg('bot', '*bzzt* … (he’s broken — press Repair)', null, log); return; }
@@ -609,8 +618,9 @@ async function boot() {
   }
   mind.onChange(renderStatus);
   $('#chat-load').addEventListener('click', () => mind.load());
-  // fetch the model in the background shortly after start (it's cached by the browser after the first time)
-  try { if (localStorage.getItem('mragent.qwen') !== 'off') setTimeout(() => mind.load(), 4000); } catch { setTimeout(() => mind.load(), 4000); }
+  // The model (about 1 GB, ~2 GB of GPU memory) only loads once you open the chat, and unloads after 10 idle minutes.
+  const aiAllowed = () => { try { return localStorage.getItem('mragent.qwen') !== 'off'; } catch { return true; } };
+  setInterval(() => mind.unloadIfIdle(10 * 60), 30000);
 
   // jump the camera to a room (or the whole house)
   const goRoom = (id) => {
@@ -673,8 +683,64 @@ async function boot() {
   setTimeout(() => $('#loader').remove(), 900);
   hud.say('Hi! I’m Mr. Agent. Click my Mac if you want to use it.', 4.5);
 
-  world.renderer.setAnimationLoop(() => {
+  // Tiny parts (fingertips, knuckles, screws) cast shadows only a pixel or two across; skipping them saves a lot of draw calls.
+  const _sph = new THREE.Sphere(), _scl = new THREE.Vector3();
+  let skipped = 0;
+  world.scene.updateMatrixWorld(true);
+  world.scene.traverse((o) => {
+    if (!o.isMesh || !o.castShadow || !o.geometry) return;
+    if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
+    o.getWorldScale(_scl);
+    _sph.copy(o.geometry.boundingSphere);
+    if (_sph.radius * Math.max(_scl.x, _scl.y, _scl.z) < 0.04) { o.castShadow = false; skipped++; }
+  });
+  // Fewer draw calls for the robots (identical look): repeated finger parts are instanced, and
+  // meshes on the same bone with the same material are merged.
+  const agentSkip = new Set([robot.visor, ...robot.head.children, ...robot.cables.map((c) => c.mesh),
+    ...robot.arms.flatMap((a) => [a.pistonBody, a.pistonRod])].filter(Boolean));
+  robot.root.traverse((o) => { if (o.isMesh && o.geometry?.attributes.color) agentSkip.add(o); }); // battery LEDs repaint per vertex
+  const agentParts = new InstancedParts(world.scene, robot.root, { skip: agentSkip });
+  const merged = mergeSiblings(robot.root, agentSkip) + mergeSiblings(kuma.robot.root);
+  const refresh = (list, root, flag) => { list.length = 0; root.traverse((o) => { if (o.isMesh && !o.isInstancedMesh) { o.userData[flag] = true; list.push(o); } }); };
+  refresh(robot.meshes, robot.root, 'robot');
+  refresh(kuma.meshes, kuma.robot.root, 'kuma');
+  window.__mr.batching = { instanced: agentParts.removed, merged, tinyShadowsSkipped: skipped, agentParts };
+
+  // Furniture that never moves doesn't need its matrices recomputed every frame.
+  const moving = new Set([house.fridge?.group, house.frontDoor?.group, ...(house.pieces || []).map((p) => p.mesh)].filter(Boolean));
+  for (const g of house.group.children) {
+    if (moving.has(g) || g.isLight) continue;
+    let dynamic = false;
+    g.traverse((o) => { if (moving.has(o)) dynamic = true; });
+    if (dynamic) continue;
+    g.updateMatrixWorld(true);
+    g.traverse((o) => { o.matrixAutoUpdate = false; });
+  }
+
+  // Things that only need drawing when you can see them (screens, faces).
+  const frustum = new THREE.Frustum(), projView = new THREE.Matrix4(), sphere = new THREE.Sphere();
+  const seen = (obj, r) => {
+    if (inMac && !flight) return false;
+    obj.getWorldPosition(sphere.center);
+    sphere.radius = r;
+    return frustum.intersectsSphere(sphere);
+  };
+  let lastFrameMs = 0, frameNo = 0;
+  world.renderer.shadowMap.autoUpdate = false; // refreshed every other frame below
+  world.renderer.setAnimationLoop((ms) => {
+    // never draw faster than ~60 fps (even on 120 Hz screens), and 30 fps while you're in another app
+    if (ms - lastFrameMs < (document.hasFocus() ? 12 : 30)) return;
+    lastFrameMs = ms;
+    frameNo++;
+    window.__mr.frames = frameNo;
     const dt = Math.min(0.05, clock.getDelta());
+    projView.multiplyMatrices(world.camera.projectionMatrix, world.camera.matrixWorldInverse);
+    frustum.setFromProjectionMatrix(projView);
+    screen.visible = seen(room.screenMesh, 0.3);
+    if (house.winScreen) winpc.visible = seen(house.winScreen.mesh, 0.4);
+    if (house.tv) house.tv.visible = !house.tv.on || seen(house.tags.tv[0], 1.2); // switching off still draws the black screen
+    robot.faceVisible = seen(robot.head, 0.3);
+    kuma.robot.visorVisible = seen(kuma.robot.head, 0.35);
     const now = clock.elapsedTime;
 
     if (flight) {
@@ -716,6 +782,7 @@ async function boot() {
     delivery.update(dt, now);
     kuma.update(dt, now);
     robot.update(dt, world.camera);
+    agentParts.update();
     screen.update(dt);
 
     // ambient motion
@@ -745,6 +812,7 @@ async function boot() {
 
     const shakeOff = new THREE.Vector3();
     if (shake > 0.001 && !inMac) { shakeOff.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).multiplyScalar(shake); world.camera.position.add(shakeOff); shake *= Math.exp(-dt * 12); }
+    if (frameNo % 2 === 0) world.renderer.shadowMap.needsUpdate = true;
     if (!inMac || flight) world.render();
     world.camera.position.sub(shakeOff);
     mac.tick(dt);
@@ -759,14 +827,13 @@ function makeHud() {
   let kTimer = null;
   const tip = $('#tip');
   const toastEl = $('#toast');
-  let bubbleT = 0, bubbleTimer = null, toastTimer = null;
+  let bubbleTimer = null, toastTimer = null;
   return {
     say(text, seconds = 3) {
       bubble.textContent = text;
       bubble.classList.add('show');
       clearTimeout(bubbleTimer);
       bubbleTimer = setTimeout(() => bubble.classList.remove('show'), seconds * 1000);
-      bubbleT = seconds;
     },
     kumaSay(text, seconds = 3.5) {
       kbubble.textContent = text;

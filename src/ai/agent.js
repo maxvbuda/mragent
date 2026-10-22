@@ -191,12 +191,27 @@ export class AgentMind {
     this.history = { agent: [], kuma: [] };
     this.listeners = new Set();
     this.busy = false;
+    this.lastUsed = 0;
   }
 
   onChange(fn) { this.listeners.add(fn); fn(this); }
   emit() { this.listeners.forEach((f) => f(this)); }
 
   get supported() { return typeof navigator !== 'undefined' && !!navigator.gpu; }
+
+  /** Free the GPU memory when nobody has talked to them for a while (it reloads from cache next time). */
+  async unloadIfIdle(seconds) {
+    if (this.status !== 'ready' || this.busy) return;
+    if (performance.now() - Math.max(this.lastUsed, this.readyAt || 0) < seconds * 1000) return;
+    try { await this.engine.unload(); } catch { /* already gone */ }
+    this.worker?.terminate();
+    this.engine = null;
+    this.worker = null;
+    this.status = 'idle';
+    this.progress = 0;
+    this.text = '';
+    this.emit();
+  }
 
   async load() {
     if (this.status === 'loading' || this.status === 'ready') return;
@@ -208,7 +223,7 @@ export class AgentMind {
       const adapter = await navigator.gpu.requestAdapter();
       if (!adapter) throw new Error('No WebGPU adapter');
       const { CreateWebWorkerMLCEngine } = await import('@mlc-ai/web-llm');
-      const worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+      const worker = this.worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
       this.engine = await CreateWebWorkerMLCEngine(worker, MODEL_ID, {
         initProgressCallback: (r) => { this.progress = r.progress || 0; this.text = r.text || ''; this.emit(); },
       });
@@ -217,6 +232,7 @@ export class AgentMind {
       this.emit();
       try { await this.engine.chat.completions.create({ messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: 'hi' }], max_tokens: 24, response_format: { type: 'json_object', schema: JSON.stringify(SCHEMA) }, extra_body: { enable_thinking: false } }); } catch { /* fine */ }
       this.status = 'ready';
+      this.readyAt = performance.now();
       this.text = 'MrAgent running locally on your device';
       this.emit();
     } catch (e) {
@@ -229,6 +245,7 @@ export class AgentMind {
 
   /** Decide what to do about a message. ctx: what he's up to right now. Returns { reply, action, place, mood, source }. */
   async think(text, ctx, persona = 'agent', retry = true, onToken = null) {
+    this.lastUsed = performance.now();
     const P = PERSONAS[persona];
     if (this.status !== 'ready' || this.busy) return { place: 'none', ...P.fallback(text, ctx), source: 'rules' };
     this.busy = true;

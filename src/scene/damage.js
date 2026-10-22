@@ -208,6 +208,7 @@ export class Damage {
     const up = V(0, 1, 0), tmpC = V(), cw = V(), rc = V();
     for (const b of this.bodies) {
       if (b.rest) continue;
+      if ((b.age = (b.age || 0) + dt) > 12) { b.rest = true; continue; } // settled enough; stop simulating
       const o = b.obj;
       b.v.y -= G * dt;
       o.position.addScaledVector(b.v, dt);
@@ -254,6 +255,7 @@ export class Damage {
     else if (!this.emitters.length && this.robot.mat.core) this.robot.mat.core.emissiveIntensity = 6;
     // sparks
     const { pos, vel, life, N } = this.sp;
+    if (this.sparksAlive || this.sp.next !== this.sp.lastNext) { // nothing to move when no sparks are flying
     for (let i = 0; i < N; i++) {
       if (life[i] <= 0) { if (pos[i * 3 + 1] > -50) pos[i * 3 + 1] = -100; continue; }
       life[i] -= dt;
@@ -263,6 +265,11 @@ export class Damage {
       if (pos[i * 3 + 1] < fy) { pos[i * 3 + 1] = fy; vel[i * 3 + 1] *= -0.3; vel[i * 3] *= 0.5; vel[i * 3 + 2] *= 0.5; }
     }
     this.sparkPts.geometry.attributes.position.needsUpdate = true;
+    this.sp.lastNext = this.sp.next;
+    let alive = 0;
+    for (let i = 0; i < N; i++) if (life[i] > 0) { alive = 1; break; }
+    this.sparksAlive = alive;
+    }
     for (const p of this.smoke) {
       if (p.life <= 0) continue;
       p.life -= dt;

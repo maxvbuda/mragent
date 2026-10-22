@@ -120,7 +120,7 @@ export class WinOS {
 
   iconMenu(e, i) {
     this.closeFlyouts();
-    const [ic, label, act] = this.icons[i];
+    const [, label] = this.icons[i];
     const r = this.screen.getBoundingClientRect();
     const m = h('div.win-menu', { style: { left: `${e.clientX - r.left}px`, top: `${e.clientY - r.top}px` } });
     const item = (t, fn) => h('button', { onclick: () => { this.closeFlyouts(); fn(); } }, t);
@@ -132,7 +132,7 @@ export class WinOS {
   }
 
   deleteIcon(i) {
-    const [ic, label] = this.icons[i];
+    const [ic] = this.icons[i];
     if (ic === 'recycle') { this.dialog('Recycle Bin', 'The Recycle Bin can’t be moved to the Recycle Bin. Nice try, though.', ['OK']); return; }
     if (ic === 'pc') { this.dialog('This PC', 'You can’t delete This PC. It’s load-bearing.', ['OK']); return; }
     this.icons.splice(i, 1);

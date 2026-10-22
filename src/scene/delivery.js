@@ -88,7 +88,7 @@ export class Delivery {
     this.mesh('parcelTape', 'tape', g);
     this.mesh('parcelLabel', 'label', g);
     // two lid flaps, hinged along the top long edges
-    const [w, h, d] = this.layout.parcel?.size || [0.36, 0.26, 0.28];
+    const [, h, d] = this.layout.parcel?.size || [0.36, 0.26, 0.28];
     g.userData.flaps = [1, -1].map((sz) => {
       const hinge = new THREE.Group();
       hinge.position.set(0, h + 0.003, sz * d / 2);

@@ -506,7 +506,7 @@ export function buildHouse(scene, geos, layout, M, robotGeos, robotMats) {
       d.angle += (d.target - d.angle) * (1 - Math.exp(-dt * 4));
       d.group.rotation.y = d.base + d.angle;
     }
-    if (out.tv) drawTV(out.tv, dt, now);
+    if (out.tv && out.tv.visible !== false) drawTV(out.tv, dt, now);
     // gamer RGB, slowly cycling
     X.rgb.emissive.setHSL((now * 0.08) % 1, 1, 0.5);
     X.rgbKeys.emissive.setHSL((now * 0.08 + 0.5) % 1, 1, 0.45);

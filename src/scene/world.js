@@ -16,7 +16,7 @@ export class World {
     r.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     r.setSize(container.clientWidth, container.clientHeight);
     r.shadowMap.enabled = true;
-    r.shadowMap.type = THREE.PCFSoftShadowMap;
+    r.shadowMap.type = THREE.PCFShadowMap; // what three.js has been using in place of PCFSoft since it was removed
     r.toneMapping = THREE.NeutralToneMapping;
     r.toneMappingExposure = 1.0;
     container.appendChild(r.domElement);

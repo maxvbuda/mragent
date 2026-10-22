@@ -636,6 +636,6 @@ export class Robot {
   }
 
   update(dt, time, colour) {
-    this.visor.update(dt, time, colour);
+    if (this.visorVisible !== false) this.visor.update(dt, time, colour);
   }
 }

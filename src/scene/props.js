@@ -189,7 +189,7 @@ export function buildRoom(scene, geos, layout, M, screen) {
   const gc = geos.globe.boundingSphere.center.clone();
   geos.globe.translate(-gc.x, -gc.y, -gc.z);
   globe.position.copy(gc);
-  const globeMesh = mesh(geos.globe, M.globe, globe);
+  mesh(geos.globe, M.globe, globe);
   mesh(geos.globeStand, M.brass, shelf);
   out.globe = globe;
   out.shelf = shelf;

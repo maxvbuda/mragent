@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { Face, visorUV } from './face.js';
 
 const DOWN = new THREE.Vector3(0, -1, 0);
-const UP = new THREE.Vector3(0, 1, 0);
 const tmp = {
   S: new THREE.Vector3(), d: new THREE.Vector3(), u: new THREE.Vector3(), v: new THREE.Vector3(), e: new THREE.Vector3(),
   f: new THREE.Vector3(), x: new THREE.Vector3(), y: new THREE.Vector3(), z: new THREE.Vector3(), E: new THREE.Vector3(),
@@ -404,7 +403,7 @@ export class Robot {
     this.updateLights(dt);
     this.updateBrain(dt);
     this.faceT = (this.faceT || 0) + dt;
-    if (this.faceT >= 1 / 30) { this.face.update(this.faceT); this.faceT = 0; } // the visor canvas only needs 30 fps
+    if (this.faceT >= 1 / 30 && this.faceVisible !== false) { this.face.update(this.faceT); this.faceT = 0; } // the visor canvas only needs 30 fps
   }
 
   trackVelocity(dt) {

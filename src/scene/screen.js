@@ -100,7 +100,7 @@ export class LaptopScreen {
   update(dt) {
     this.t += dt;
     this.blink += dt;
-    if (this.mode === 'saver') { this.drawSaver(dt); return; }
+    if (this.mode === 'saver') { if (this.visible !== false) this.drawSaver(dt); return; }
     if (this.phase === 'testing') {
       this.phaseT += dt;
       const n = Math.min(this.snip.test.length, Math.floor(this.phaseT / 0.28));
@@ -125,7 +125,7 @@ export class LaptopScreen {
     }
     if (this.blink > 0.53) { this.blink = 0; this.cursorOn = !this.cursorOn; this.dirty = true; }
     // redraw at most ~15 times a second, however fast he types
-    if (this.dirty && this.t - this.lastDraw > 1 / 15) { this.lastDraw = this.t; this.draw(); }
+    if (this.dirty && this.visible !== false && this.t - this.lastDraw > 1 / 15) { this.lastDraw = this.t; this.draw(); }
   }
 
   setMode(mode) {

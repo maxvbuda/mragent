@@ -332,7 +332,7 @@ export class Brain {
     if (target === 'desk') { await this.returnToDesk(); this.setArms('thighs'); return; }
     const spot = typeof target === 'string' ? (this.spots[target] || this.roomSpot(target)) : target;
     if (!spot) return;
-    this.setActivity(label || `Walking to the ${String(target).replace(/([A-Z])/g, ' $1').toLowerCase()}`);
+    this.setActivity(label || (typeof target === 'string' ? `Walking to the ${target.replace(/([A-Z])/g, ' $1').toLowerCase()}` : 'Walking over'));
     await this.getUp();
     await this.walkTo(spot);
     if (spot.seat) await this.sitOnSpot(spot);
@@ -576,7 +576,6 @@ export class Brain {
   updateTyping(dt) {
     const ty = this.typing, r = this.robot, scr = this.screen;
     const fwd = r.worldForward(V());
-    const down = fwd.clone().multiplyScalar(Math.cos(0.42)).add(V(0, -Math.sin(0.42), 0));
     r.arms.forEach((arm, i) => {
       const hs = ty.hands[i];
       const h = this.hand[i];
@@ -915,7 +914,7 @@ export class Brain {
     this.setArms('hips', [1]);
     arm.fingers.forEach((f) => { f.curl = 0.25; });
     // brew
-    this.setActivity('Whisking an matcha');
+    this.setActivity('Whisking a matcha');
     r.face.set('loading');
     r.lookAt(this.room.cupSpot(), 1);
     const stream = this.room.coffeeStream;
@@ -1050,6 +1049,7 @@ export class Brain {
     }, this.mode !== 'user');
     } finally {
       this.dancing = false;
+      if (this.partyMusic) { music.pause(); this.partyMusic = false; } // music we started just for this dance stops with it
       st.waistY = w0; st.twist = 0; st.headRoll = 0; st.headPitch = 0;
       this.setArms('rest');
     }
@@ -1238,7 +1238,6 @@ export class Brain {
     r.face.set('wink', 1.5);
     this.say(pick(['Looking sharp.', 'Is that a smudge on my visor?', 'Hello, handsome.']), 2.4);
     await this.wait(1.2);
-    const arm = r.arms[0];
     const right = V(Math.cos(r.heading), 0, -Math.sin(r.heading));
     const fwd = r.worldForward(V());
     let t = 0;

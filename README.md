@@ -75,13 +75,13 @@ and unboxes it, and the item flies to its place:
 
 The chat panel runs **Qwen3-1.7B** (`Qwen3-1.7B-q4f16_1-MLC`) locally through
 [WebLLM](https://github.com/mlc-ai/web-llm) on WebGPU, in a Web Worker. The weights (about 1 GB)
-start downloading a few seconds after the page opens. The browser caches them, so later
-visits load in seconds. Each message goes to the model with what he's doing right now, how
+only load when you first open the chat, and the model unloads itself after 10 idle minutes to
+give the memory back. The browser caches the download, so it reloads in seconds. Each message goes to the model with what he's doing right now, how
 damaged he is and how often he's been punched. The model answers in schema-constrained JSON:
 a reply, an action (walk to any room or spot, make matcha, watch TV, nap, dance, come
 over, visit Kuma, let you drive…) and a mood. He refuses rude, harmful or impossible
 requests. Without WebGPU, or while the weights are still downloading, a rule-based parser
-stands in. Set `localStorage['mragent.qwen'] = 'off'` to stop the automatic download.
+stands in. Set `localStorage['mragent.qwen'] = 'off'` to never load the model.
 
 In the chat the AI is called **MrAgent**, and it doesn't know how it was built: replies
 that mention FreeCAD or CAD are cut out.
@@ -160,6 +160,18 @@ Some of it reaches back into the room:
 - **Music** makes him dance.
 - **Settings → Mr. Agent** changes the time of day and his typing speed, and sends him on breaks.
 - **Messages** lets you chat with him.
+
+## Keeping it light
+
+- The AI model loads only when you open the chat and unloads after 10 idle minutes.
+- It draws at most 60 frames a second, and 30 while the window isn't focused.
+- Shadows are refreshed every other frame.
+- Screens, faces and the TV skip redrawing while they're off-screen or the Mac or Windows simulator is open.
+- Parts smaller than about 4 cm don't cast shadows.
+- Mr. Agent's repeated finger parts are drawn as one instanced batch, and meshes that share a bone and a material are merged.
+- Debris and sparks stop simulating once they settle.
+
+None of this changes how anything looks. Together they cut draw calls per frame by about a quarter.
 
 ## Rebuilding the models
 

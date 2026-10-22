@@ -139,7 +139,7 @@ export class WinPC {
       }
     }
     this.acc += dt;
-    if (this.acc > 1 / 12) { this.acc = 0; this.draw(); }
+    if (this.acc > 1 / 12 && this.visible !== false) { this.acc = 0; this.draw(); } // skip while nobody can see it
   }
 
   // ------------------------------------------------------------ the little screen in the room
