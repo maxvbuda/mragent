@@ -364,10 +364,10 @@ async function boot() {
   const keymap = { m: 'mac', c: 'coffee', y: 'stretch', o: 'window', n: 'dance', h: 'wave', t: 'time', v: 'sound', r: 'reset', f: 'follow', g: 'tv', k: 'tinker', b: 'snack', z: 'sleep', x: 'walls', p: 'punch', u: 'repair', i: 'brain', e: 'shop' };
   const typing = (e) => /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
 
-  // ------------------------------------------------------------ keys that are held: WASD moves the camera, arrow keys walk him
+  // ------------------------------------------------------------ keys that are held: WASD walks him, arrow keys move the camera
   const held = new Set();
   let autoFollow = false;
-  const CAM_KEYS = ['w', 'a', 's', 'd'], DRIVE_KEYS = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
+  const DRIVE_KEYS = ['w', 'a', 's', 'd'], CAM_KEYS = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
   window.addEventListener('keydown', (e) => {
     if (inMac || typing(e) || e.metaKey || e.ctrlKey || e.altKey) return;
     const k = e.key.toLowerCase();
@@ -398,22 +398,22 @@ async function boot() {
   function updateDriveInput(shift) {
     const { f, r } = camDir();
     const v = new THREE.Vector3();
-    if (held.has('arrowup')) v.add(f);
-    if (held.has('arrowdown')) v.sub(f);
-    if (held.has('arrowright')) v.add(r);
-    if (held.has('arrowleft')) v.sub(r);
+    if (held.has('w')) v.add(f);
+    if (held.has('s')) v.sub(f);
+    if (held.has('d')) v.add(r);
+    if (held.has('a')) v.sub(r);
     brain.input.x = v.x; brain.input.z = v.z; brain.input.run = shift;
     if (autoFollow && !brain.driving) { autoFollow = false; followRobot = false; $('#btn-follow').classList.remove('on'); }
   }
-  /** WASD slides the camera (and what it's looking at) across the floor; Shift goes faster. */
+  /** The arrow keys slide the camera (and what it's looking at) across the floor; Shift goes faster. */
   const camVel = new THREE.Vector3();
   function updateCameraKeys(dt, shift) {
     const { f, r } = camDir();
     const want = new THREE.Vector3();
-    if (held.has('w')) want.add(f);
-    if (held.has('s')) want.sub(f);
-    if (held.has('d')) want.add(r);
-    if (held.has('a')) want.sub(r);
+    if (held.has('arrowup')) want.add(f);
+    if (held.has('arrowdown')) want.sub(f);
+    if (held.has('arrowright')) want.add(r);
+    if (held.has('arrowleft')) want.sub(r);
     const dist = world.camera.position.distanceTo(world.controls.target);
     if (want.lengthSq() > 0) want.normalize().multiplyScalar(THREE.MathUtils.clamp(dist * 0.45, 1.2, 8) * (shift ? 2.5 : 1));
     camVel.lerp(want, 1 - Math.exp(-dt * 10)); // ease in and out
